@@ -1,0 +1,2813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memcoin Interface</title>
+<style>
+:root{
+  --bg:#f0eeea; --card:#ffffff; --recv:#eceae5; --border:#dedad2; --div:#ece9e3;
+  --text:#1a1917; --sub:#7c766c; --sub2:#6b6760;
+  --green:#166534; --red:#991b1b; --blue:#1e40af; --amber:#92600e;
+  --f-ui:"Segoe UI", Ubuntu, Cantarell, "Noto Sans", "DejaVu Sans", "Liberation Sans", Arial, sans-serif;
+  --f-mono:Consolas, "DejaVu Sans Mono", "Liberation Mono", "Noto Sans Mono", "Ubuntu Mono", "Courier New", monospace;
+}
+*,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+html,body{
+  background:var(--bg); color:var(--text);
+  font-family:var(--f-ui); font-size:12px; line-height:1.55;
+  display:flex; justify-content:center; min-height:100vh;
+}
+html{ overflow-y:scroll; scrollbar-gutter:stable; }
+body{ padding:40px 16px 64px; }
+#app{
+  width:720px; min-width:720px; max-width:720px; background:var(--card);
+  border:1px solid var(--border); box-shadow:0 1px 2px rgba(0,0,0,.03),0 8px 28px rgba(0,0,0,.05);
+}
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button{ -webkit-appearance:none; }
+input[type=number]{ -moz-appearance:textfield; }
+input::placeholder{ opacity:.35; }
+:focus-visible{ outline:2px solid var(--text); outline-offset:2px; }
+.mono{ font-family:var(--f-mono); }
+
+#header{
+  display:flex; justify-content:space-between; align-items:center; gap:16px;
+  padding:13px 24px 12px; border-bottom:1px solid var(--border);
+}
+#header .brand .mark{ font-size:11px; font-weight:600; letter-spacing:5px; }
+#header .brand .sub{ font-size:10px; color:var(--sub); margin-left:10px; }
+#node-bar{ display:flex; align-items:center; gap:6px; font-size:10px; white-space:nowrap; }
+#node-bar #node-status{ color:var(--sub); }
+#node-bar #node-height{ color:var(--sub); }
+.dot{ display:inline-block; width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+.dot.green{ background:var(--green); } .dot.red{ background:var(--red); } .dot.grey{ background:var(--sub); }
+
+#balance-card{ padding:16px 24px 14px; border-bottom:1px solid var(--border); }
+.bal-head{ display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:6px; }
+.bal-head-left{ display:flex; align-items:baseline; gap:10px; min-width:0; }
+.bal-head-left .lbl{ font-size:10px; font-weight:500; color:var(--sub); white-space:nowrap; }
+#wallet-label{ font-size:10px; color:var(--sub); font-family:var(--f-mono); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.bal-head-right{ display:flex; align-items:center; gap:6px; flex-shrink:0; }
+.wallet-pill{
+  font-family:var(--f-mono); font-size:11px; color:var(--text);
+  border:1px solid var(--border); background:var(--bg);
+  padding:3px 8px; outline:none; cursor:pointer;
+}
+#bal-avail{
+  font-family:var(--f-mono); font-size:34px; font-weight:300; letter-spacing:-1px;
+  line-height:1; color:var(--text); word-break:break-word;
+}
+.bal-foot{ display:flex; border-top:1px solid var(--div); margin-top:14px; padding-top:12px; }
+.bal-item{ flex:1; }
+.bal-item:first-child{ padding-right:22px; border-right:1px solid var(--div); }
+.bal-item:last-child{ padding-left:22px; }
+.bal-item .bl{ font-size:10px; color:var(--sub); font-weight:500; margin-bottom:3px; }
+.bal-item .bv{ font-size:17px; font-family:var(--f-mono); letter-spacing:-.3px; }
+.bal-item .bv.unlocked{ color:var(--green); }
+.bal-item .bv.locked{ color:var(--sub); }
+.bal-item .bs{ font-size:10px; color:var(--sub); margin-top:2px; }
+.bal-item .bs.pending{ color:var(--amber); }
+
+#wallet-create-row{
+  display:none; align-items:center; gap:8px; padding:8px 24px;
+  background:var(--recv); border-bottom:1px solid var(--border); font-size:10px;
+}
+#wallet-create-row .cw-lbl{ font-size:10px; font-weight:500; color:var(--sub); white-space:nowrap; }
+#wir-input1, #wir-input2{
+  flex:1; min-width:0; font-family:var(--f-mono); font-size:11px;
+  border:1px solid var(--border); background:var(--card); color:var(--text);
+  padding:4px 10px; outline:none;
+}
+#wallet-create-msg{ font-size:10px; }
+
+#wallet-pw-actions{ display:inline-flex; gap:6px; }
+
+#receive-bar{
+  display:flex; align-items:center; gap:10px; padding:8px 24px;
+  background:var(--recv); border-bottom:1px solid var(--border);
+}
+#receive-bar .rl{ font-size:10px; font-weight:500; color:var(--sub); white-space:nowrap; }
+#receive-addr{ font-family:var(--f-mono); font-size:11px; color:var(--text); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+#nav{ display:flex; border-bottom:1px solid var(--border); padding:0 14px; }
+#nav button{
+  background:transparent; border:none; border-bottom:2px solid transparent;
+  padding:10px 14px; font-family:var(--f-ui); font-size:12px; color:var(--sub);
+  cursor:pointer; margin-bottom:-1px; transition:color .12s,border-color .12s;
+}
+#nav button:hover:not(.active){ color:var(--text); }
+#nav button.active{ color:var(--text); font-weight:500; border-bottom-color:var(--text); }
+
+.panel-area{ padding:20px 24px; }
+.panel{ display:none; } .panel.active{ display:block; }
+.panel-title{
+  font-size:11px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase;
+  color:var(--sub); margin-bottom:14px;
+}
+.panel-sub{
+  font-size:11px; font-weight:600; letter-spacing:1px; text-transform:uppercase;
+  color:var(--sub); margin-bottom:14px;
+}
+.field{ margin-bottom:12px; }
+.field label{ display:block; font-size:11px; font-weight:500; color:var(--sub); margin-bottom:4px; }
+.field input,.field select{
+  width:100%; font-family:var(--f-mono); font-size:12px; color:var(--text);
+  border:1px solid var(--border); background:var(--card); padding:8px 11px; outline:none;
+}
+.field input:focus{ border-color:var(--sub); }
+.field input[readonly]{ background:var(--bg); color:var(--sub2); }
+
+.btn{
+  font-family:var(--f-ui); font-size:12px; font-weight:500;
+  border:1px solid var(--border); background:var(--card); color:var(--text);
+  padding:8px 16px; cursor:pointer; transition:background .12s,color .12s,border-color .12s;
+}
+.btn:hover{ border-color:var(--sub); }
+.btn.primary{ background:var(--text); color:#fff; border-color:var(--text); padding:10px 26px; }
+.btn.primary:hover{ background:#000; }
+.btn.sm{ font-size:10px; font-weight:500; padding:3px 10px; }
+.btn:disabled{ opacity:.35; cursor:not-allowed; }
+.btn:disabled:hover{ border-color:var(--border); }
+.btn-row{ display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
+.adv-toggle{ font-size:11px; color:var(--sub); cursor:pointer; user-select:none; }
+.adv-toggle:hover{ color:var(--text); }
+.adv-box{ margin-top:8px; padding:10px 12px; border:1px solid var(--div); background:#faf9f6; }
+
+.box{
+  border:1px solid var(--border); background:#faf9f6; padding:9px 12px;
+  font-size:12px; margin-top:12px; word-break:break-all; line-height:1.7;
+}
+.box.ok{ border-color:var(--green); color:var(--green); }
+.box.err{ border-color:var(--red); color:var(--red); }
+.box.info{ border-color:var(--blue); color:var(--blue); }
+.hint{ font-size:10px; color:var(--sub); margin-top:4px; font-family:var(--f-mono); }
+.denom-preview{
+  border:1px solid var(--div); padding:7px 11px; font-size:11px; margin-top:8px;
+  color:var(--sub2); min-height:30px; line-height:1.8; font-family:var(--f-mono);
+}
+.divider{ border:none; border-top:1px solid var(--div); margin:14px 0; }
+
+.tx2-card{ border:1px solid var(--div); padding:10px 12px; margin-bottom:8px; cursor:pointer; transition:border-color .12s,background .12s; }
+.tx2-card:hover{ border-color:var(--border); }
+.tx2-card.selected{ border-color:var(--text); background:var(--bg); }
+.tx2-card.disabled{ opacity:.45; cursor:not-allowed; }
+.tx2-card-top{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:3px; }
+.tx2-total{ font-size:15px; font-family:var(--f-mono); }
+.tx2-lock{ font-size:10px; color:var(--sub2); }
+.tx2-txid{ font-size:10px; color:var(--sub); font-family:var(--f-mono); word-break:break-all; margin-bottom:3px; }
+.tx2-status{ font-size:10px; }
+.tx2-status.avail{ color:var(--green); }
+.tx2-status.locked{ color:var(--sub); }
+#tx2-summary{ font-size:11px; color:var(--sub2); margin-top:8px; min-height:16px; }
+.hist-empty{ font-size:11px; color:var(--sub); padding:10px 0; }
+.tx2-group{ margin-bottom:8px; border:1px solid var(--border); }
+.tx2-group-hdr{
+  display:flex; align-items:center; gap:8px; padding:7px 11px; background:#f6f4f0;
+  cursor:pointer; font-size:11px; border-bottom:1px solid var(--div); user-select:none; flex-wrap:wrap;
+}
+.tx2-group-hdr:hover{ background:var(--bg); }
+.tx2-group-arrow{ font-size:9px; color:var(--sub); width:10px; flex-shrink:0; }
+.tx2-group-range{ font-weight:600; white-space:nowrap; font-family:var(--f-mono); }
+.tx2-group-info{ color:var(--sub); white-space:nowrap; font-family:var(--f-mono); }
+.tx2-group-status{ flex:1; min-width:80px; }
+.tx2-group-btns{ display:flex; gap:4px; flex-shrink:0; }
+.tx2-group-body{ padding:8px 10px; }
+.tx2-group .tx2-card{ border-color:var(--div); margin-bottom:4px; }
+.tx2-group .tx2-card:last-child{ margin-bottom:0; }
+.tx2-group .tx2-card.selected{ border-color:var(--text); }
+.tx2-dest-row{ display:flex; gap:6px; align-items:center; margin-bottom:6px; }
+.tx2-dest-row input[type="text"]{
+  flex:1; min-width:200px; font-family:var(--f-mono); font-size:12px;
+  border:1px solid var(--border); padding:6px 9px; outline:none; background:var(--card); color:var(--text);
+}
+.tx2-dest-row input[type="number"]{
+  width:88px; font-family:var(--f-mono); font-size:12px;
+  border:1px solid var(--border); padding:6px 8px; outline:none; text-align:right; background:var(--card); color:var(--text);
+}
+.tx2-dest-row .unit{ font-size:11px; color:var(--sub); white-space:nowrap; }
+
+.hist-row{ border-bottom:1px solid var(--div); font-size:12px; cursor:pointer; }
+.hist-row:last-child{ border-bottom:none; }
+.hist-row:hover .hist-row-main{ background:var(--bg); }
+.hist-row-main{ display:flex; align-items:center; padding:9px 6px; gap:0; }
+.hist-txid{ font-size:11px; color:var(--sub); font-family:var(--f-mono); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; min-width:0; }
+.hist-meta{ display:flex; align-items:baseline; gap:10px; flex-shrink:0; margin-left:12px; }
+.hist-tag{ display:inline-block; font-size:9px; border:1px solid currentColor; padding:1px 4px; font-family:var(--f-mono); }
+.hist-tag.tx2{ color:var(--blue); }
+.hist-tag.tx1{ color:var(--green); }
+.hist-amt{ white-space:nowrap; font-family:var(--f-mono); font-weight:500; color:var(--red); }
+.hist-amt.pos{ color:var(--green); }
+.hist-conf{ font-size:10px; color:var(--sub); white-space:nowrap; font-family:var(--f-mono); }
+.hist-time{ font-size:10px; color:var(--sub); white-space:nowrap; font-family:var(--f-mono); }
+.hist-arrow{ font-size:9px; color:var(--sub); white-space:nowrap; }
+.hist-detail{ display:none; padding:8px 6px 10px; border-top:1px solid var(--div); }
+.hist-detail.open{ display:block; }
+.kv{ display:flex; gap:8px; padding:3px 0; border-bottom:1px solid var(--div); font-size:11px; }
+.kv:last-child{ border-bottom:none; }
+.kv .k{ color:var(--sub); white-space:nowrap; min-width:90px; flex-shrink:0; }
+.kv .v{ word-break:break-all; font-family:var(--f-mono); }
+
+.row{ display:flex; align-items:center; }
+.gap8{ gap:8px; }
+.flex1{ flex:1; min-width:0; }
+.inp{
+  font-family:var(--f-mono); font-size:12px; color:var(--text);
+  border:1px solid var(--border); background:var(--card);
+  padding:8px 11px; outline:none; line-height:1;
+}
+.inp:focus{ border-color:var(--sub); }
+
+.addr-row{ display:flex; align-items:center; gap:14px; margin-bottom:7px; }
+.addr-row:last-child{ margin-bottom:0; }
+.addr-mono{ font-family:var(--f-mono); font-size:12px; color:var(--text); }
+.addr-btns{ display:flex; gap:8px; flex-shrink:0; opacity:0; transition:opacity .12s; }
+.addr-row:hover .addr-btns{ opacity:1; }
+
+.contact-card{ display:flex; align-items:center; gap:14px; margin-bottom:7px; }
+.contact-card:last-child{ margin-bottom:0; }
+.contact-name{ font-size:12px; font-weight:500; flex-shrink:0; width:96px; min-width:96px; border:1px solid var(--div); padding:3px 10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; background:transparent; text-align:center; }
+.contact-addr{ font-family:var(--f-mono); font-size:12px; color:var(--text); }
+.contact-btns{ display:flex; gap:8px; flex-shrink:0; opacity:0; transition:opacity .12s; }
+.contact-card:hover .contact-btns{ opacity:1; }
+.btn-del:hover{ color:var(--red); border-color:var(--red); }
+
+.io-table{ width:100%; border-collapse:collapse; font-size:12px; margin-bottom:10px; }
+.io-table th,.io-table td{ border:1px solid var(--div); padding:5px 8px; text-align:left; vertical-align:middle; }
+.io-table th{ background:var(--bg); font-size:10px; font-weight:600; letter-spacing:.5px; color:var(--sub); text-transform:uppercase; }
+.io-table tbody tr:hover td{ background:var(--bg); }
+.io-table .right{ text-align:right; }
+.io-table tbody tr.peer-active td{ background:var(--recv); }
+.peer-detail{ border:1px solid var(--div); padding:10px 12px; margin-top:8px; background:var(--card); }
+.peer-section{ margin-top:16px; padding-top:12px; border-top:1px solid var(--div); }
+.peer-input{
+  flex:1; min-width:0; font-family:var(--f-mono); font-size:12px; color:var(--text);
+  border:1px solid var(--border); background:var(--card); padding:6px 10px; outline:none;
+}
+.peer-input:focus{ border-color:var(--sub); }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Header -->
+  <div id="header">
+    <div class="brand">
+      <span class="mark">MEMCOIN</span>
+      <span class="sub">local wallet interface · node signs all transactions</span>
+    </div>
+    <div id="node-bar">
+      <span class="dot grey" id="dot"></span>
+      <span id="node-status">not connected</span>
+      <span id="node-height"></span>
+    </div>
+  </div>
+
+  <!-- Balance -->
+  <div id="balance-card">
+    <div class="bal-head">
+      <div class="bal-head-left">
+        <span class="lbl">Available balance</span>
+        <span id="wallet-label">no wallet loaded</span>
+      </div>
+      <div class="bal-head-right">
+        <select id="wallet-select" class="wallet-pill" onchange="onWalletChange()">
+          <option value="__none__">— wallet —</option>
+        </select>
+        <span id="wallet-pw-actions"></span>
+        <button class="btn sm" onclick="refreshAll()">refresh</button>
+      </div>
+    </div>
+    <div id="bal-avail" class="mono">—</div>
+    <div class="bal-foot">
+      <div class="bal-item">
+        <div class="bl">Unlocked</div>
+        <div class="bv unlocked" id="bal-unlocked">—</div>
+        <div class="bs" id="bal-unlocked-sub" style="cursor:pointer" tabindex="0" role="button"
+          onclick="if(this.textContent.trim())document.querySelectorAll('#nav button')[2].click()"></div>
+      </div>
+      <div class="bal-item">
+        <div class="bl">Locked</div>
+        <div class="bv locked" id="bal-locked">—</div>
+        <div class="bs pending" id="bal-locked-sub"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Wallet inline action row: create wallet / set password / unlock / change password -->
+  <div id="wallet-create-row">
+    <span class="cw-lbl" id="wir-lbl1">New wallet name</span>
+    <input type="text" id="wir-input1" placeholder="e.g. mywallet" autocomplete="off"
+      onkeydown="if(event.key==='Enter')wirSubmit();if(event.key==='Escape')wirCancel()">
+    <span class="cw-lbl" id="wir-lbl2" style="display:none">Confirm</span>
+    <input type="password" id="wir-input2" style="display:none" autocomplete="off"
+      onkeydown="if(event.key==='Enter')wirSubmit();if(event.key==='Escape')wirCancel()">
+    <button class="btn sm primary" id="wir-submit" onclick="wirSubmit()">create</button>
+    <button class="btn sm" onclick="wirCancel()">✕</button>
+    <span id="wallet-create-msg"></span>
+  </div>
+
+  <!-- Receive bar -->
+  <div id="receive-bar">
+    <span class="rl">Receive</span>
+    <span id="receive-addr" class="mono">—</span>
+    <button class="btn sm" onclick="newAddress()">new address</button>
+  </div>
+
+  <!-- Nav -->
+  <div id="nav">
+    <button class="active" onclick="showPanel('send',this)">Send</button>
+    <button onclick="showPanel('tx1',this)">TX1</button>
+    <button onclick="showPanel('tx2',this)">TX2</button>
+    <button onclick="showPanel('addresses',this)">Addresses</button>
+    <button onclick="showPanel('history',this)">History</button>
+    <button onclick="showPanel('contacts',this)">Contacts</button>
+    <button onclick="showPanel('peers',this)">Peers</button>
+  </div>
+
+  <div class="panel-area">
+
+  <!-- Send -->
+  <div class="panel active" id="panel-send">
+    <div class="panel-title">Send</div>
+    <div class="field">
+      <label>To address</label>
+      <input type="text" id="send-addr" placeholder="M…">
+    </div>
+    <div class="field">
+      <label>Amount (MEM)</label>
+      <input type="number" id="send-amount" min="0" step="any" placeholder="0.00000000" onwheel="this.blur()"
+        oninput="onSendInput(); updateSendFeePreview();">
+    </div>
+    <div class="hint" id="send-equiv"></div>
+    <div style="margin-top:10px">
+      <span class="adv-toggle" tabindex="0" role="button" onclick="toggleAdv('send')">advanced ▸</span>
+    </div>
+    <div id="adv-send" class="adv-box" style="display:none">
+      <div style="font-size:11px;color:var(--sub);margin-bottom:6px">addresses
+        <button class="btn sm" style="float:right;margin-left:6px" onclick="advAddrAll('send',false)">none</button>
+        <button class="btn sm" style="float:right" onclick="advAddrAll('send',true)">all</button>
+      </div>
+      <div id="send-addr-body" style="font-size:11px;max-height:200px;overflow-y:auto"></div>
+      <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--sub2);margin-top:8px;cursor:pointer">
+        <input type="checkbox" id="send-subtract-fee" onchange="updateSendFeePreview()">
+        subtract fee from amount <span style="color:var(--sub)">(recipient receives less)</span>
+      </label>
+      <div id="send-fee-preview" style="font-size:11px;color:var(--sub);margin-top:4px;min-height:14px;font-family:var(--f-mono)"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn primary" onclick="doSend()">Send</button>
+    </div>
+    <div id="send-result"></div>
+  </div>
+
+  <!-- TX1 -->
+  <div class="panel" id="panel-tx1">
+    <div class="panel-title">TX1</div>
+    <div class="field">
+      <label>Recipient address</label>
+      <input type="text" id="tx1-addr" placeholder="M…">
+    </div>
+    <div class="field">
+      <label>Amount (kbit)</label>
+      <input type="number" id="tx1-amount" min="100" step="0.001" placeholder="min 100 ᴋ"
+        oninput="onTX1Input()" onwheel="this.blur()">
+    </div>
+    <div class="hint">range: 100 ᴋ – 100,000 ᴋ (1 𝕄) · zero fee · locked ~3 days (432 blocks) · single CLTV output</div>
+    <div class="denom-preview" id="tx1-output-preview">enter amount to preview</div>
+    <div style="margin-top:10px">
+      <span class="adv-toggle" tabindex="0" role="button" onclick="toggleAdv('tx1')">advanced ▸</span>
+    </div>
+    <div id="adv-tx1" class="adv-box" style="display:none">
+      <div style="font-size:11px;color:var(--sub);margin-bottom:6px">select exactly 1 UTXO
+        <button class="btn sm" style="float:right" onclick="advAddrAll('tx1',false)">clear</button>
+      </div>
+      <div id="tx1-addr-body" style="font-size:11px;max-height:200px;overflow-y:auto"></div>
+      <div style="margin-top:8px;font-size:11px;color:var(--sub)">change returns to sender if UTXO exceeds amount</div>
+    </div>
+    <div class="btn-row">
+      <button class="btn primary" onclick="doTX1()">Build &amp; send</button>
+    </div>
+    <div id="tx1-result"></div>
+  </div>
+
+  <!-- TX2 -->
+  <div class="panel" id="panel-tx2">
+    <div class="panel-title">TX2</div>
+    <div style="margin-bottom:8px">
+      <span class="adv-toggle" tabindex="0" role="button" onclick="toggleAdv('tx2')">advanced ▸</span>
+    </div>
+    <div id="adv-tx2" class="adv-box" style="display:none;margin-bottom:10px">
+      <div style="font-size:11px;color:var(--sub);margin-bottom:6px">scan addresses &nbsp;<span style="color:var(--sub)">(deselect to exclude)</span>
+        <button class="btn sm" style="float:right;margin-left:6px" onclick="tx2AddrAll(false)">none</button>
+        <button class="btn sm" style="float:right" onclick="tx2AddrAll(true)">all</button>
+      </div>
+      <div id="tx2-addr-body" style="font-size:11px;max-height:140px;overflow-y:auto"></div>
+    </div>
+    <div class="btn-row" style="margin-top:0;margin-bottom:12px">
+      <button class="btn" onclick="loadCLTVUtxos()">refresh</button>
+    </div>
+    <div id="tx2-scan-result"></div>
+    <div id="tx2-utxo-wrap" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:11px;color:var(--sub);flex-wrap:wrap;gap:6px">
+        <span style="font-size:11px;color:var(--sub)">each group is spent in one TX2</span>
+        <span style="display:flex;gap:4px;align-items:center">
+          <span style="font-size:11px;color:var(--sub)">sort:</span>
+          <button class="btn sm" id="tx2-sort-locktime" onclick="setTX2Sort('locktime')" style="font-weight:600">unlock height</button>
+          <button class="btn sm" id="tx2-sort-recent" onclick="setTX2Sort('recent')">latest tx</button>
+        </span>
+        <span id="tx2-select-all-wrap">
+          <button class="btn sm" onclick="selectAllTX2()">select all</button>
+          <button class="btn sm" onclick="deselectAllTX2()">deselect</button>
+        </span>
+      </div>
+      <div id="tx2-utxo-body"></div>
+      <div id="tx2-summary"></div>
+      <hr class="divider">
+      <div class="field">
+        <label>Primary address — receives remainder (empty = new wallet address)</label>
+        <input type="text" id="tx2-dest" placeholder="M…">
+        <div id="tx2-primary-remainder" style="font-size:11px;color:var(--sub);margin-top:3px;min-height:16px;font-family:var(--f-mono)"></div>
+      </div>
+      <div style="margin-top:6px;margin-bottom:10px">
+        <span class="adv-toggle" tabindex="0" role="button" onclick="toggleTX2MultiOut()">multiple outputs ▸</span>
+      </div>
+      <div id="tx2-multiout" class="adv-box" style="display:none;margin-bottom:10px">
+        <div style="font-size:11px;color:var(--sub);margin-bottom:8px">
+          additional outputs (max 2) · primary receives remainder · 3 outputs total maximum
+        </div>
+        <div id="tx2-dest-list"></div>
+        <div style="margin-top:6px">
+          <button class="btn sm" onclick="addTX2DestRow()">+ add address</button>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn primary" onclick="doTX2()">Build &amp; send</button>
+      </div>
+    </div>
+    <div id="tx2-result"></div>
+  </div>
+
+  <!-- Addresses -->
+  <div class="panel" id="panel-addresses">
+    <div class="panel-title">Addresses</div>
+    <div class="row gap8">
+      <input id="addr-label-in" class="inp flex1" placeholder="name" style="max-width:120px">
+      <input id="addr-addr-in" class="inp flex1" placeholder="address (optional)">
+      <button class="btn" onclick="saveAddress()">create</button>
+    </div>
+    <div id="addresses-result"></div>
+    <hr class="divider">
+    <div class="panel-sub">Book</div>
+    <div id="addresses-list"></div>
+    <hr class="divider">
+    <div class="panel-sub">Check</div>
+    <div class="row gap8">
+      <input id="addr-check-in" class="inp flex1" placeholder="address">
+      <button class="btn" onclick="checkAddress()">check</button>
+    </div>
+    <div id="addr-check-result"></div>
+  </div>
+
+  <!-- History -->
+  <div class="panel" id="panel-history">
+    <div class="panel-title">History</div>
+    <div id="history-list"><div class="hist-empty">loading…</div></div>
+    <div id="hist-loadmore-wrap" style="display:none;text-align:center;margin-top:8px">
+      <button class="btn" id="hist-loadmore-btn" onclick="loadMoreHistory()" style="width:100%;padding:8px 0;font-size:12px"></button>
+    </div>
+  </div>
+
+  <!-- Contacts -->
+  <div class="panel" id="panel-contacts">
+    <div class="panel-title">Contacts</div>
+    <div id="contacts-list"></div>
+    <hr class="divider">
+    <div class="panel-sub">Add contact</div>
+    <div class="row gap8">
+      <input type="text" id="contact-name-input" class="inp flex1" placeholder="name" style="max-width:120px"
+        onkeydown="if(event.key==='Enter')document.getElementById('contact-addr-input').focus()">
+      <input type="text" id="contact-addr-input" class="inp flex1" placeholder="address"
+        onkeydown="if(event.key==='Enter')saveContact()">
+      <button class="btn" onclick="saveContact()">save</button>
+    </div>
+    <div id="contact-save-result"></div>
+  </div>
+
+  <!-- Peers -->
+  <div class="panel" id="panel-peers">
+    <div class="panel-title">Peers</div>
+    <div id="peers-list"><div class="hist-empty">loading…</div></div>
+    <div id="peers-managed"></div>
+    <div id="peers-banned"></div>
+  </div>
+
+  </div>
+</div>
+<script>
+// NOTE: placeholder RPC credentials for a local node. Change rpcuser/rpcpassword
+// in your node config (and below) — do not reuse these defaults anywhere
+// other than a trusted local machine.
+const CFG = {
+  endpoint: 'http://localhost:9332',
+  user: 'memcoin',
+  pass: 'memcoinrpc',
+  wallet: null
+};
+const S = { connected: false, height: 0, cltvUtxos: [], labels: null, nearestLockH: Infinity, nearestBatchBit: 0, walletStatus: {} };
+let tx2SortMode = 'locktime'; // 'locktime' | 'recent'
+let tx2VisibleCount = 20;   // how many groups currently shown
+const TX2_PAGE = 20;        // groups per load-more step
+
+const _peerCache = {};
+let _activePeerIdx = null;
+const SERVICE_FLAGS = [
+  [0x0001, 'NODE_NETWORK'],
+  [0x1000, 'NODE_MEMCOIN']
+];
+
+async function rpc(method, params = [], wallet) {
+  const w = wallet !== undefined ? wallet : CFG.wallet;
+  const url = (w != null && w !== '__none__')
+    ? `${CFG.endpoint}/wallet/${encodeURIComponent(w)}`
+    : CFG.endpoint;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Basic ' + btoa(CFG.user + ':' + CFG.pass)
+    },
+    body: JSON.stringify({ jsonrpc: '1.0', id: 1, method, params })
+  });
+  const text = await res.text();
+  let d = null;
+  try { d = JSON.parse(text); } catch(_) {}
+  // The node's RPC server returns a non-2xx HTTP status (e.g. 500) for most RPC-level
+  // errors (wrong passphrase, locked wallet, etc.), but the JSON body still carries
+  // the real {code, message} — so check that first regardless of res.ok.
+  if (d && d.error) {
+    const err = new Error(d.error.message || JSON.stringify(d.error));
+    err.code = d.error.code;
+    throw err;
+  }
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${text.slice(0, 120)}`);
+  return d ? d.result : null;
+}
+
+const unhex = s => { const b = new Uint8Array(s.length/2); for(let i=0;i<s.length;i+=2) b[i/2]=parseInt(s.slice(i,i+2),16); return b; };
+const hexOf = b => Array.from(b).map(x=>x.toString(16).padStart(2,'0')).join('');
+const cat   = (...a) => { const t=a.reduce((s,x)=>s+x.length,0),r=new Uint8Array(t); let o=0; for(const x of a){r.set(x,o);o+=x.length;} return r; };
+const le32  = n => { const b=new Uint8Array(4); new DataView(b.buffer).setUint32(0,n,true); return b; };
+const le32s = n => { const b=new Uint8Array(4); new DataView(b.buffer).setInt32(0,n,true); return b; };
+const le64  = n => { const b=new Uint8Array(8),dv=new DataView(b.buffer); dv.setUint32(0,n>>>0,true); dv.setUint32(4,Math.floor(n/0x100000000),true); return b; };
+function varint(n) {
+  if (n < 0xfd) return new Uint8Array([n]);
+  if (n <= 0xffff) { const b=new Uint8Array(3); b[0]=0xfd; new DataView(b.buffer).setUint16(1,n,true); return b; }
+  const b=new Uint8Array(5); b[0]=0xfe; new DataView(b.buffer).setUint32(1,n,true); return b;
+}
+
+// Amounts are masked whenever the current wallet is locked; this is derived
+// live from the wallet's own encryption status rather than a separate toggle.
+const AMOUNT_MASK = '••••••';
+function isCurWalletLocked() {
+  const st = CFG.wallet != null ? S.walletStatus[CFG.wallet] : null;
+  return !!(st && st.locked);
+}
+
+function fmtBit(bit) {
+  if (isCurWalletLocked()) return `<span style="white-space:nowrap">${AMOUNT_MASK}</span>`;
+  if (bit === 0) return '<span style="white-space:nowrap">0.0 ᴋ</span>';
+  const mem  = Math.floor(bit / 100000000);
+  const mbit = Math.floor((bit % 100000000) / 1000000);
+  const kb   = (bit % 1000000) / 1000;
+  const p = [];
+  if (mem  > 0) p.push(`<span style="white-space:nowrap">${mem.toLocaleString()} \u{1D544}</span>`);
+  if (mbit > 0) p.push(`<span style="white-space:nowrap">${mbit} \u1D0D</span>`);
+  if (kb > 0 || (mem === 0 && mbit === 0)) p.push(`<span style="white-space:nowrap">${parseFloat(kb.toFixed(3))} \u1D0B</span>`);
+  return p.join(' ');
+}
+function fmtSize(b) { return b >= 1048576 ? (b/1048576).toFixed(1)+' MB' : b >= 1024 ? (b/1024).toFixed(1)+' KB' : b+' B'; }
+
+const B58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+function b58decode(s) {
+  let n = 0n;
+  for (const c of s) { const i=B58.indexOf(c); if(i<0) throw new Error('bad base58: '+c); n=n*58n+BigInt(i); }
+  const bytes = []; while(n>0n){bytes.unshift(Number(n&0xffn));n>>=8n;}
+  for (const c of s) { if(c!=='1') break; bytes.unshift(0); }
+  return new Uint8Array(bytes);
+}
+function b58encode(bytes) {
+  let n = 0n;
+  for (const b of bytes) n = n*256n + BigInt(b);
+  let s = '';
+  while (n > 0n) { const r = Number(n % 58n); s = B58[r] + s; n /= 58n; }
+  for (const b of bytes) { if (b !== 0) break; s = '1' + s; }
+  return s;
+}
+async function pkhToAddr(pkhHex) {
+  const pkh = unhex(pkhHex);
+  const vb  = 0x32;
+  const payload = new Uint8Array([vb, ...pkh]);
+  const cs = (await sha256(await sha256(payload))).slice(0, 4);
+  return b58encode(new Uint8Array([...payload, ...cs]));
+}
+async function sha256(bytes) {
+  const h = await crypto.subtle.digest('SHA-256', bytes);
+  return new Uint8Array(h);
+}
+async function b58decodeCheck(s) {
+  const b = b58decode(s);
+  if (b.length !== 25) throw new Error('invalid address length');
+  if (b[0] !== 0x32) throw new Error('invalid address version');
+  const payload  = b.slice(0, 21);
+  const checksum = b.slice(21, 25);
+  const expected = (await sha256(await sha256(payload))).slice(0, 4);
+  for (let i = 0; i < 4; i++)
+    if (checksum[i] !== expected[i]) throw new Error('invalid address checksum');
+  return b;
+}
+async function addrToPkh(addr) {
+  const b = await b58decodeCheck(addr);
+  return b.slice(1, 21);
+}
+function p2pkhScript(pkh) {
+  const b = typeof pkh === 'string' ? unhex(pkh) : pkh;
+  return cat(new Uint8Array([0x76,0xa9,0x14]), b, new Uint8Array([0x88,0xac]));
+}
+function encodePushInt(n) {
+  if (n === 0) return new Uint8Array([0]);
+  const bytes = []; let v = n;
+  while (v > 0) { bytes.push(v & 0xff); v >>= 8; }
+  if (bytes[bytes.length-1] & 0x80) bytes.push(0);
+  return new Uint8Array(bytes);
+}
+function cltvScript(cltvHeight, pkhHex) {
+  const lb = encodePushInt(cltvHeight), pkh = unhex(pkhHex);
+  return cat(new Uint8Array([lb.length]), lb,
+             new Uint8Array([0xb1,0x75,0x76,0xa9,0x14]), pkh,
+             new Uint8Array([0x88,0xac]));
+}
+function pkhFromCLTVScript(scriptHex) {
+  const bytes = unhex(scriptHex), ltLen = bytes[0], o = 1 + ltLen;
+  return hexOf(bytes.slice(o+5, o+25));
+}
+function isCLTVScript(scriptHex) {
+  const bytes = unhex(scriptHex);
+  if (bytes.length < 29) return false;
+  const ltLen = bytes[0];
+  if (ltLen < 1 || ltLen > 5) return false;
+  if (bytes.length !== 1 + ltLen + 27) return false;
+  const o = 1 + ltLen;
+  return bytes[o]===0xb1 && bytes[o+1]===0x75 && bytes[o+2]===0x76 &&
+         bytes[o+3]===0xa9 && bytes[o+4]===0x14 &&
+         bytes[o+25]===0x88 && bytes[o+26]===0xac;
+}
+function parseCLTVHeight(scriptHex) {
+  const bytes = unhex(scriptHex), ltLen = bytes[0], ltBytes = bytes.slice(1, 1+ltLen);
+  let val = 0;
+  for (let i = 0; i < ltBytes.length; i++) val |= ltBytes[i] << (8*i);
+  return val;
+}
+
+function buildRawTx(version, inputs, outputs, locktime) {
+  const parts = [le32s(version), varint(inputs.length)];
+  for (const i of inputs)
+    parts.push(unhex(i.txid).reverse(), le32(i.vout), varint(0), le32(i.sequence ?? 0xffffffff));
+  parts.push(varint(outputs.length));
+  for (const o of outputs) parts.push(le64(o.valueBit), varint(o.script.length), o.script);
+  parts.push(le32(locktime));
+  return hexOf(cat(...parts));
+}
+
+async function autoConnect() {
+  try {
+    const info = await rpc('getblockchaininfo', [], null);
+    S.height = info.blocks; S.connected = true;
+    setDot('green'); setEl('node-status', 'connected');
+    setEl('node-height', '· block ' + S.height.toLocaleString());
+    await loadWallets();
+    await updateInfoStrip();
+  } catch(e) {
+    setDot('red'); setEl('node-status', 'not connected');
+  }
+}
+
+async function updateInfoStrip() {
+  if (!S.connected) return;
+  try {
+    const [net, chain] = await Promise.all([
+      rpc('getnetworkinfo', [], null),
+      rpc('getblockchaininfo', [], null)
+    ]);
+    S.height = chain.blocks;
+    setEl('node-status', 'connected');
+    setEl('node-height', '· block ' + chain.blocks.toLocaleString() + ' · ' + net.connections + ' peers');
+  } catch(e) {}
+}
+
+async function loadWallets() {
+  try {
+    const loaded   = await rpc('listwallets', [], null);
+    const dirRes   = await rpc('listwalletdir', [], null).catch(() => ({ wallets: [] }));
+    const allNames = [...new Set([...loaded, ...(dirRes.wallets||[]).map(w=>w.name)])];
+    // List all wallets with private keys enabled (watch-only excluded). Locked/encrypted
+    // wallets are kept in the list (marked [locked]) rather than hidden, so they can be unlocked from the UI.
+    const listed = [];
+    S.walletStatus = {};
+    for (const w of allNames) {
+      try {
+        if (!loaded.includes(w)) await rpc('loadwallet', [w], null).catch(()=>{});
+        const info = await rpc('getwalletinfo', [], w);
+        if (!info.private_keys_enabled) continue; // watch-only
+        const encrypted = 'unlocked_until' in info;
+        const locked = encrypted && info.unlocked_until === 0;
+        S.walletStatus[w] = { encrypted, locked };
+        listed.push(w);
+      } catch(e) {
+        listed.push(w); // couldn't read wallet info: include anyway, status unknown
+      }
+    }
+    // Refresh loaded list — the loop above may have called loadwallet for new wallets
+    const loadedNow = await rpc('listwallets', [], null).catch(() => loaded);
+    const sel = document.getElementById('wallet-select');
+    sel.innerHTML = '<option value="__none__">— wallet —</option>';
+    for (const w of listed) {
+      const opt = document.createElement('option');
+      const st = S.walletStatus[w];
+      let suffix = '';
+      if (!loadedNow.includes(w)) suffix += ' [not loaded]';
+      if (st && st.locked) suffix += ' [locked]';
+      opt.value = w;
+      opt.textContent = (w === '' ? '(default)' : w) + suffix;
+      sel.appendChild(opt);
+    }
+    // Always append create option
+    const createOpt = document.createElement('option');
+    createOpt.value = '__create__'; createOpt.textContent = 'create wallet';
+    sel.appendChild(createOpt);
+    const listedLoaded = listed.filter(w => loadedNow.includes(w));
+    if (CFG.wallet != null && listed.includes(CFG.wallet)) {
+      sel.value = CFG.wallet; // keep current selection visible after a refresh (e.g. after unlock/lock)
+    } else if (listedLoaded.length === 1) {
+      const w = listedLoaded[0];
+      sel.value = w; CFG.wallet = w;
+      setEl('wallet-label', 'wallet: ' + (w === '' ? '(default)' : w));
+      await refreshAll();
+    }
+    renderWalletPwActions();
+  } catch(e) {}
+}
+
+async function onWalletChange() {
+  const val = document.getElementById('wallet-select').value;
+  if (val === '__none__') {
+    CFG.wallet = null; setEl('wallet-label', 'no wallet loaded');
+    _addrCache    = null; _addrLoaded    = false;
+    _contactCache = null; _contactLoaded = false;
+    clearBalance(); renderWalletPwActions(); return;
+  }
+  if (val === '__create__') {
+    document.getElementById('wallet-select').value = '__none__';
+    openWalletForm('create');
+    return;
+  }
+  try {
+    const loaded = await rpc('listwallets', [], null);
+    if (!loaded.includes(val)) await rpc('loadwallet', [val], null);
+  } catch(e) {}
+  CFG.wallet = val;
+  setEl('wallet-label', 'wallet: ' + (val === '' ? '(default)' : val));
+  S.labels = null;
+  _addrCache    = null; _addrLoaded    = false;
+  _contactCache = null; _contactLoaded = false;
+  document.getElementById('addr-check-in').value = '';
+  setEl('addr-check-result', '');
+  // refresh this wallet's encrypted/locked status for the password action button(s)
+  try {
+    const info = await rpc('getwalletinfo', [], val);
+    const encrypted = 'unlocked_until' in info;
+    S.walletStatus[val] = { encrypted, locked: encrypted && info.unlocked_until === 0 };
+  } catch(e) {}
+  renderWalletPwActions();
+  await refreshAll();
+  const active = document.querySelector('.panel.active');
+  if (active?.id === 'panel-history')   loadHistory();
+  if (active?.id === 'panel-addresses') loadAddresses();
+  if (active?.id === 'panel-contacts')  loadContacts();
+}
+
+// Shared inline form row for create/set-password/unlock/change-password; modes are
+// mutually exclusive, only one can be open at a time.
+let _wirMode = null; // 'create' | 'setpass' | 'unlock' | 'changepass'
+
+function renderWalletPwActions() {
+  const el = document.getElementById('wallet-pw-actions');
+  if (!el) return;
+  const st = CFG.wallet != null ? S.walletStatus[CFG.wallet] : null;
+  if (!st) { el.innerHTML = ''; return; } // no wallet selected, or watch-only/unknown status
+  if (!st.encrypted) {
+    el.innerHTML = '<button class="btn sm" onclick="openWalletForm(\'setpass\')">set password</button>';
+  } else if (st.locked) {
+    el.innerHTML = '<button class="btn sm" onclick="openWalletForm(\'unlock\')">unlock</button>';
+  } else {
+    el.innerHTML =
+      '<button class="btn sm" onclick="openWalletForm(\'changepass\')">change password</button>' +
+      '<button class="btn sm" onclick="doLockWallet()">lock</button>';
+  }
+}
+
+function openWalletForm(mode) {
+  _wirMode = mode;
+  const lbl1  = document.getElementById('wir-lbl1');
+  const lbl2  = document.getElementById('wir-lbl2');
+  const in1   = document.getElementById('wir-input1');
+  const in2   = document.getElementById('wir-input2');
+  const submit= document.getElementById('wir-submit');
+  const msg   = document.getElementById('wallet-create-msg');
+  in1.value = ''; in2.value = ''; msg.textContent = '';
+
+  if (mode === 'create') {
+    lbl1.textContent = 'New wallet name'; in1.type = 'text'; in1.placeholder = 'e.g. mywallet';
+    lbl2.style.display = 'none'; in2.style.display = 'none'; in2.placeholder = '';
+    submit.textContent = 'create';
+  } else if (mode === 'setpass') {
+    lbl1.textContent = 'New password'; in1.type = 'password'; in1.placeholder = 'enter new password';
+    lbl2.textContent = 'Confirm password'; lbl2.style.display = ''; in2.style.display = ''; in2.type = 'password';
+    in2.placeholder = 're-enter password';
+    submit.textContent = 'set password';
+  } else if (mode === 'unlock') {
+    lbl1.textContent = 'Password'; in1.type = 'password'; in1.placeholder = 'enter wallet password';
+    lbl2.style.display = 'none'; in2.style.display = 'none'; in2.placeholder = '';
+    submit.textContent = 'unlock';
+  } else if (mode === 'changepass') {
+    lbl1.textContent = 'Current password'; in1.type = 'password'; in1.placeholder = 'current password';
+    lbl2.textContent = 'New password'; lbl2.style.display = ''; in2.style.display = ''; in2.type = 'password';
+    in2.placeholder = 'new password';
+    submit.textContent = 'change password';
+  }
+  document.getElementById('receive-bar').style.display = 'none';
+  document.getElementById('wallet-create-row').style.display = 'flex';
+  in1.focus();
+}
+
+function wirCancel() {
+  document.getElementById('wallet-create-row').style.display = 'none';
+  document.getElementById('receive-bar').style.display = 'flex';
+  document.getElementById('wir-input1').value = '';
+  document.getElementById('wir-input2').value = '';
+  document.getElementById('wallet-create-msg').textContent = '';
+  _wirMode = null;
+}
+
+async function wirSubmit() {
+  const mode = _wirMode;
+  const in1  = document.getElementById('wir-input1').value;
+  const in2  = document.getElementById('wir-input2').value;
+  const msg  = document.getElementById('wallet-create-msg');
+  const setMsg = (ok, text) => { msg.style.color = ok ? 'var(--green)' : '#991b1b'; msg.textContent = text; };
+
+  if (mode === 'create') {
+    const name = in1.trim();
+    if (!name) { setMsg(false, 'enter a name'); return; }
+    msg.style.color = '#9a9690'; msg.textContent = 'creating…';
+    try {
+      await rpc('createwallet', [name], null);
+      wirCancel();
+      await loadWallets();
+      const sel = document.getElementById('wallet-select');
+      if ([...sel.options].some(o => o.value === name)) {
+        sel.value = name;
+        await onWalletChange();
+      }
+    } catch(e) { setMsg(false, e.message.slice(0, 60)); }
+    return;
+  }
+
+  if (mode === 'setpass') {
+    if (!in1) { setMsg(false, 'enter a password'); return; }
+    if (in1 !== in2) { setMsg(false, 'passwords do not match'); return; }
+    msg.style.color = '#9a9690'; msg.textContent = 'encrypting…';
+    try {
+      await rpc('encryptwallet', [in1], CFG.wallet);
+      wirCancel();
+      await loadWallets();
+      await refreshBalance(); // encryptwallet leaves the wallet locked — mask balance right away
+      refreshActiveAmountViews();
+    } catch(e) { setMsg(false, e.message.slice(0, 60)); }
+    return;
+  }
+
+  if (mode === 'unlock') {
+    if (!in1) { setMsg(false, 'enter the password'); return; }
+    msg.style.color = '#9a9690'; msg.textContent = 'unlocking…';
+    try {
+      await rpc('walletpassphrase', [in1, 100000000], CFG.wallet);
+      wirCancel();
+      await loadWallets();
+      await refreshBalance(); // reveal the balance again immediately on unlock
+      refreshActiveAmountViews();
+    } catch(e) {
+      setMsg(false, e.code === -14 ? 'incorrect password' : e.message.slice(0, 60));
+    }
+    return;
+  }
+
+  if (mode === 'changepass') {
+    if (!in1 || !in2) { setMsg(false, 'fill in both fields'); return; }
+    msg.style.color = '#9a9690'; msg.textContent = 'changing…';
+    try {
+      await rpc('walletpassphrasechange', [in1, in2], CFG.wallet);
+      wirCancel();
+      await loadWallets();
+    } catch(e) {
+      setMsg(false, e.code === -14 ? 'current password is incorrect' : e.message.slice(0, 60));
+    }
+    return;
+  }
+}
+
+// Re-render whichever panel is currently open and shows amounts, so content
+// already on screen switches mask state immediately (fmtBit() itself only
+// masks new renders — it can't retroactively touch HTML already in the DOM).
+function refreshActiveAmountViews() {
+  const active = document.querySelector('.panel.active');
+  if (active?.id === 'panel-history') loadHistory();
+  if (active?.id === 'panel-tx2')     loadCLTVUtxos();
+}
+
+async function doLockWallet() {
+  try {
+    await rpc('walletlock', [], CFG.wallet);
+    await loadWallets();
+    await refreshBalance();
+    // clear any leftover result box that might still show a plaintext amount from before locking
+    setEl('send-result', ''); setEl('tx1-result', ''); setEl('tx2-result', '');
+    refreshActiveAmountViews();
+  } catch(e) {}
+}
+
+function clearBalance() {
+  setEl('bal-avail','—');
+  setEl('bal-unlocked','—'); setEl('bal-unlocked-sub','');
+  setEl('bal-locked','—');   setEl('bal-locked-sub','');
+}
+
+async function refreshAll() {
+  if (!S.connected || CFG.wallet == null) return;
+  S.labels = null;
+  warmLabelsCache();
+  await Promise.all([refreshBalance(), refreshPending(), refreshReceiveAddr(), updateInfoStrip()]);
+  await loadCLTVUtxos();
+}
+
+let _labelsPromise = null;
+async function warmLabelsCache() {
+  if (S.labels !== null) return;
+  if (!_labelsPromise) {
+    _labelsPromise = rpc('listlabels')
+      .then(l  => { S.labels = l; })
+      .catch(() => { S.labels = []; })
+      .finally(() => { _labelsPromise = null; });
+  }
+  return _labelsPromise;
+}
+
+let _balRefreshing = false;
+let _balPending    = false;
+async function refreshBalance() {
+  if (!S.connected || CFG.wallet == null) return;
+  if (_balRefreshing) { _balPending = true; return; }
+  _balRefreshing = true;
+  _balPending    = false;
+  try {
+    const [utxos, chain] = await Promise.all([
+      rpc('listunspent', [1, 9999999]),
+      rpc('getblockchaininfo', [], null)
+    ]);
+    S.height = chain.blocks;
+    let avail = 0, unlocked = 0, locked = 0;
+    let nearestLockH = Infinity, nearestBatchBit = 0;
+    for (const u of utxos) {
+      const bit = Math.round(u.amount * 1e8);
+      const spk = u.scriptPubKey || '';
+      if (isCLTVScript(spk)) {
+        const cltvH = parseCLTVHeight(spk);
+        if (cltvH + 1 <= S.height) {
+          unlocked += bit;
+        } else {
+          locked += bit;
+          if (cltvH < nearestLockH) {
+            nearestLockH = cltvH;
+            nearestBatchBit = bit;
+          } else if (cltvH === nearestLockH) {
+            nearestBatchBit += bit;
+          }
+        }
+      } else {
+        avail += bit;
+      }
+    }
+    S.nearestLockH    = nearestLockH;
+    S.nearestBatchBit = nearestBatchBit;
+    setEl('bal-avail',    isCurWalletLocked() ? AMOUNT_MASK : (avail    > 0 ? fmtBit(avail)    : '0'));
+    setEl('bal-unlocked', isCurWalletLocked() ? AMOUNT_MASK : (unlocked > 0 ? fmtBit(unlocked) : '0'));
+    setEl('bal-unlocked-sub', unlocked > 0 ? 'spend via TX2 ▸' : '');
+    setEl('bal-locked',   isCurWalletLocked() ? AMOUNT_MASK : (locked   > 0 ? fmtBit(locked)   : '0'));
+    setEl('bal-locked-sub',
+      nearestLockH < Infinity
+        ? `${fmtBit(nearestBatchBit)} · unlocks in ${nearestLockH + 1 - S.height} blocks`
+        : '');
+  } catch(e) {
+    setEl('bal-avail', '<span style="font-size:13px;font-family:var(--f-ui);color:var(--red)">error: ' + e.message.slice(0, 60) + '</span>');
+    setEl('bal-unlocked', '—');
+    setEl('bal-locked', '—');
+    setEl('bal-locked-sub', '');
+  } finally {
+    _balRefreshing = false;
+    if (_balPending) refreshBalance();
+  }
+}
+
+let _pendingRefreshing = false;
+async function refreshPending() {
+  if (!S.connected || CFG.wallet == null) return;
+  if (_pendingRefreshing) return;
+  _pendingRefreshing = true;
+  try {
+    const utxos = await rpc('listunspent', [0, 0]);   // mempool only
+    let pending = 0;
+    for (const u of utxos) {
+      if (isCLTVScript(u.scriptPubKey || ''))
+        pending += Math.round(u.amount * 1e8);
+    }
+    const sub = pending > 0
+      ? `+${fmtBit(pending)} pending`
+      : (S.nearestLockH < Infinity
+          ? `${fmtBit(S.nearestBatchBit)} · unlocks in ${S.nearestLockH + 1 - S.height} blocks`
+          : '');
+    setEl('bal-locked-sub', sub);
+  } catch(e) {}
+  finally { _pendingRefreshing = false; }
+}
+
+async function refreshReceiveAddr() {
+  if (!S.connected || CFG.wallet == null) return;
+  try {
+    const addr = await rpc('getrawchangeaddress');
+    setEl('receive-addr', addr);
+  } catch(e) {}
+}
+
+async function newAddress() {
+  if (!checkReady('')) return;
+  try {
+    const addr = await rpc('getnewaddress');
+    setEl('receive-addr', addr);
+  } catch(e) {}
+}
+
+const S_adv = { send: false, tx1: false, tx2: false };
+
+async function toggleAdv(which) {
+  S_adv[which] = !S_adv[which];
+  const div = document.getElementById('adv-' + which);
+  const btn = document.querySelector(`[onclick="toggleAdv('${which}')"]`);
+  div.style.display = S_adv[which] ? 'block' : 'none';
+  btn.textContent = S_adv[which] ? 'advanced ▾' : 'advanced ▸';
+  if (S_adv[which]) {
+    if (which === 'send' || which === 'tx1') await loadAdvAddrs(which);
+    if (which === 'tx2') await loadTX2Addrs();
+  }
+}
+
+async function getAllWalletAddrs() {
+  const [groups] = await Promise.all([
+    rpc('listaddressgroupings').catch(() => []),
+    warmLabelsCache()
+  ]);
+  const addrs = new Set();
+  for (const g of groups) for (const e of g) addrs.add(e[0]);
+  const labels = S.labels || [];
+  const addrMaps = await Promise.all(labels.map(l => rpc('getaddressesbylabel', [l]).catch(() => ({}))));
+  labels.forEach((l, i) => { for (const addr of Object.keys(addrMaps[i])) addrs.add(addr); });
+  return addrs;
+}
+
+async function loadAdvAddrs(which) {
+  const body = document.getElementById(which + '-addr-body');
+  if (!S.connected) { body.innerHTML = '<span style="color:#9a9690">not connected</span>'; return; }
+  body.innerHTML = '<span style="color:#b3afa8">loading…</span>';
+  try {
+    const [allAddrs, utxos] = await Promise.all([
+      getAllWalletAddrs(),
+      rpc('listunspent', [0, 9999999])
+    ]);
+    const spendable = utxos.filter(u => !isCLTVScript(u.scriptPubKey || ''));
+
+    // Group UTXOs by address
+    const byAddr = {};
+    for (const addr of allAddrs) byAddr[addr] = [];
+    for (const u of spendable) {
+      const addr = u.address || '';
+      if (!byAddr[addr]) byAddr[addr] = [];
+      byAddr[addr].push({
+        txid: u.txid, vout: u.vout,
+        bit: Math.round(u.amount * 1e8),
+        spk: u.scriptPubKey || '',
+        confs: u.confirmations || 0
+      });
+    }
+
+    // Sort: addresses with UTXOs first, then by total desc
+    const sorted = Object.entries(byAddr).sort((a, b) => {
+      const ta = a[1].reduce((s, u) => s + u.bit, 0);
+      const tb = b[1].reduce((s, u) => s + u.bit, 0);
+      return tb - ta;
+    });
+
+    if (!sorted.length) { body.innerHTML = '<span style="color:#9a9690">no addresses</span>'; return; }
+
+    body.innerHTML = sorted.map(([addr, utxoList]) => {
+      const total = utxoList.reduce((s, u) => s + u.bit, 0);
+      const uid = 'adv-' + which + '-' + addr.replace(/[^a-zA-Z0-9]/g, '_');
+      const hasUtxos = utxoList.length > 0;
+      const utxoRows = hasUtxos ? utxoList.map(u =>
+        `<tr>
+          <td><input type="checkbox" class="adv-utxo-cb-${which}" data-addr="${addr}"
+            data-bit="${u.bit}" data-txid="${u.txid}" data-vout="${u.vout}" data-spk="${u.spk}"
+            onchange="updateAdvSelected('${which}')"></td>
+          <td style="color:#b3afa8">${u.txid.slice(0,10)}…:${u.vout}</td>
+          <td style="text-align:right">${fmtBit(u.bit)}</td>
+          <td style="color:#9a9690;text-align:right">${u.confs}</td>
+        </tr>`
+      ).join('') : '';
+
+      return `<div style="border-bottom:1px solid #ece9e3">
+        <div style="display:flex;align-items:center;gap:6px;padding:3px 0">
+          <input type="checkbox" id="cb-addr-${uid}" class="adv-addr-cb-${which}"
+            data-addr="${addr}" ${!hasUtxos ? 'disabled' : ''}
+            onchange="toggleAdvAddr('${which}','${addr}','${uid}')">
+          <span style="font-family:var(--f-mono);flex:1;font-size:11px;cursor:${hasUtxos?'pointer':'default'}"
+            onclick="${hasUtxos?`toggleAdvUtxoPanel('${uid}')`:''}">${addr}</span>
+          <span style="color:${total>0?'#1a1917':'#c2beb6'};font-size:11px">${fmtBit(total)}</span>
+          ${hasUtxos ? `<span style="cursor:pointer;color:#b3afa8;font-size:11px" id="arrow-${uid}"
+            onclick="toggleAdvUtxoPanel('${uid}')">▸</span>` : '<span style="font-size:11px;color:#dedad2">—</span>'}
+        </div>
+        ${hasUtxos ? `<div id="utxos-${uid}" style="display:none;padding:2px 0 4px 14px">
+          <table style="width:100%;font-size:11px;border-collapse:collapse">
+            <thead><tr style="color:#b3afa8">
+              <th style="width:16px"></th><th style="text-align:left">txid</th>
+              <th style="text-align:right">amount</th><th style="text-align:right">confs</th>
+            </tr></thead>
+            <tbody>${utxoRows}</tbody>
+          </table>
+        </div>` : ''}
+      </div>`;
+    }).join('');
+
+    // Selected counter
+    const counterId = which + '-adv-counter';
+    if (!document.getElementById(counterId)) {
+      const counter = document.createElement('div');
+      counter.id = counterId;
+      counter.style.cssText = 'font-size:11px;color:#9a9690;margin-top:6px;min-height:16px';
+      body.parentNode.appendChild(counter);
+    }
+    updateAdvSelected(which);
+  } catch(e) { body.innerHTML = `<span style="color:#991b1b">${e.message.slice(0,80)}</span>`; }
+}
+
+function bitToMEM(bit) {
+  return (bit / 1e8).toFixed(8).replace(/(\..\d*?)0+$/, '$1').replace(/\.$/, '');
+}
+
+function updateAdvSelected(which) {
+  const cbs = [...document.querySelectorAll(`.adv-utxo-cb-${which}`)].filter(cb => cb.checked);
+  const total = cbs.reduce((s, cb) => s + parseInt(cb.dataset.bit), 0);
+  const el = document.getElementById(which + '-adv-counter');
+  if (el) {
+    if (cbs.length === 0) {
+      el.innerHTML = '';
+    } else if (which === 'send') {
+      const memVal = bitToMEM(total);
+      el.innerHTML = `selected: ${cbs.length} UTXO · ${memVal} MEM `
+        + `<button class="btn sm" onclick="fillAmountFromSelected(${total})" style="margin-left:2px">`
+        + `fill amount</button>`;
+    } else {
+      el.innerHTML = `selected: ${cbs.length} UTXO · ${fmtBit(total)}`;
+    }
+  }
+  if (which === 'send') updateSendFeePreview();
+}
+
+function fillAmountFromSelected(totalBit) {
+  const input = document.getElementById('send-amount');
+  input.value = bitToMEM(totalBit);
+  // auto-enable subtract fee: selected total fills amount exactly, fee must come from it
+  const cb = document.getElementById('send-subtract-fee');
+  if (cb && !cb.checked) { cb.checked = true; }
+  input.dispatchEvent(new Event('input'));
+  updateSendFeePreview();
+}
+
+function updateSendFeePreview() {
+  const preview = document.getElementById('send-fee-preview');
+  if (!preview) return;
+  const cbs = [...document.querySelectorAll('.adv-utxo-cb-send')].filter(cb => cb.checked);
+  if (cbs.length === 0) { preview.innerHTML = ''; return; }
+  const subtractFee = document.getElementById('send-subtract-fee').checked;
+  const totalIn  = cbs.reduce((s, cb) => s + parseInt(cb.dataset.bit), 0);
+  const estSize  = 10 + 148 * cbs.length + 34 * (subtractFee ? 1 : 2);
+  const feeBit   = Math.max(estSize, 1000);
+  const amtInput = parseFloat(document.getElementById('send-amount').value);
+  const amtBit   = amtInput > 0 ? Math.round(amtInput * 1e8) : null;
+  if (subtractFee) {
+    const note = amtBit
+      ? `est. fee ${fmtBit(feeBit)} · recipient receives ${fmtBit(Math.max(0, amtBit - feeBit))}`
+      : `est. fee ${fmtBit(feeBit)}`;
+    preview.innerHTML = note;
+  } else {
+    const note = amtBit
+      ? `est. fee ${fmtBit(feeBit)} · total needed ${fmtBit(amtBit + feeBit)} of ${fmtBit(totalIn)} selected`
+      : `est. fee ${fmtBit(feeBit)}`;
+    preview.innerHTML = note;
+  }
+}
+
+function toggleAdvUtxoPanel(uid) {
+  const panel = document.getElementById('utxos-' + uid);
+  const arrow = document.getElementById('arrow-' + uid);
+  const open = panel.style.display === 'none';
+  panel.style.display = open ? 'block' : 'none';
+  arrow.textContent = open ? '▾' : '▸';
+}
+
+function toggleAdvAddr(which, addr, uid) {
+  const checked = document.getElementById('cb-addr-' + uid).checked;
+  document.querySelectorAll(`.adv-utxo-cb-${which}[data-addr="${addr}"]`)
+    .forEach(cb => cb.checked = checked);
+  if (checked) {
+    const panel = document.getElementById('utxos-' + uid);
+    const arrow = document.getElementById('arrow-' + uid);
+    if (panel && panel.style.display === 'none') {
+      panel.style.display = 'block';
+      if (arrow) arrow.textContent = '▾';
+    }
+  }
+  updateAdvSelected(which);
+}
+
+function advAddrAll(which, v) {
+  document.querySelectorAll(`.adv-addr-cb-${which}`).forEach(cb => {
+    if (cb.disabled) return;
+    cb.checked = v;
+    const addr = cb.dataset.addr;
+    const uid = 'adv-' + which + '-' + addr.replace(/[^a-zA-Z0-9]/g, '_');
+    document.querySelectorAll(`.adv-utxo-cb-${which}[data-addr="${addr}"]`)
+      .forEach(u => u.checked = v);
+    const panel = document.getElementById('utxos-' + uid);
+    const arrow = document.getElementById('arrow-' + uid);
+    if (panel && v) { panel.style.display = 'block'; if (arrow) arrow.textContent = '▾'; }
+    else if (panel && !v) { panel.style.display = 'none'; if (arrow) arrow.textContent = '▸'; }
+  });
+  updateAdvSelected(which);
+}
+
+async function loadTX2Addrs() {
+  const body = document.getElementById('tx2-addr-body');
+  if (!S.connected) { body.innerHTML = '<span style="color:#9a9690">not connected</span>'; return; }
+  body.innerHTML = '<span style="color:#b3afa8">loading…</span>';
+  try {
+    const addrs = await getAllWalletAddrs();
+    const arr = [...addrs];
+    if (!arr.length) { body.innerHTML = '<span style="color:#9a9690">no addresses</span>'; return; }
+    body.innerHTML = arr.map(addr =>
+      `<label style="display:flex;gap:8px;align-items:center;padding:2px 0;cursor:pointer">
+        <input type="checkbox" class="tx2-addr-cb" checked value="${addr}">
+        <span style="font-family:var(--f-mono)">${addr}</span>
+      </label>`
+    ).join('');
+  } catch(e) { body.innerHTML = `<span style="color:#991b1b">${e.message.slice(0,60)}</span>`; }
+}
+
+function tx2AddrAll(v) {
+  document.querySelectorAll('.tx2-addr-cb').forEach(cb => cb.checked = v);
+}
+
+function onSendInput() {
+  const amt = parseFloat(document.getElementById('send-amount').value);
+  if (!isNaN(amt) && amt > 0) {
+    setEl('send-equiv', '= ' + fmtBit(Math.round(amt * 1e8)));
+  } else {
+    setEl('send-equiv', '');
+  }
+}
+
+async function doSend() {
+  if (!checkReady('send-result')) return;
+  const addr = document.getElementById('send-addr').value.trim();
+  const amt  = parseFloat(document.getElementById('send-amount').value);
+  if (!addr) { setEl('send-result', box('err', 'enter recipient address')); return; }
+  if (!amt || amt <= 0) { setEl('send-result', box('err', 'enter amount')); return; }
+
+  const btnS = document.querySelector('[onclick="doSend()"]');
+  btnS.disabled = true;
+  // Advanced: check if UTXOs manually selected
+  const selCbs = S_adv.send
+    ? [...document.querySelectorAll('.adv-utxo-cb-send')].filter(cb => cb.checked)
+    : [];
+
+  if (S_adv.send && selCbs.length > 0) {
+    // Raw TX path with manually selected UTXOs
+    const amtBit      = Math.round(amt * 1e8);
+    const subtractFee = document.getElementById('send-subtract-fee').checked;
+    const selUtxos = selCbs.map(cb => ({
+      txid: cb.dataset.txid, vout: parseInt(cb.dataset.vout),
+      bit: parseInt(cb.dataset.bit), scriptPubKey: cb.dataset.spk
+    }));
+    const totalIn = selUtxos.reduce((s, u) => s + u.bit, 0);
+    setEl('send-result', box('info', 'building TX…'));
+    try {
+      if (totalIn < amtBit) {
+        setEl('send-result', box('err',
+          `selected ${fmtBit(totalIn)}, need ${fmtBit(amtBit)}`)); return;
+      }
+      let recipPkh;
+      try { recipPkh = hexOf(await addrToPkh(addr)); }
+      catch(e) { setEl('send-result', box('err', 'invalid address: ' + e.message)); return; }
+
+      // Estimate fee: 1 bit/byte · P2PKH: 10 + 148×in + 34×out bytes
+      const estOuts  = subtractFee ? 1 : 2; // no change output if subtracting fee and exact
+      const estSize  = 10 + 148 * selUtxos.length + 34 * estOuts;
+      const feeBit   = Math.max(estSize, 1000); // min 1000 bit
+
+      let recipBit, changeBit;
+      if (subtractFee) {
+        // Fee comes out of the amount; recipient gets amtBit − fee
+        recipBit  = amtBit - feeBit;
+        changeBit = totalIn - amtBit;
+        if (recipBit <= 0) {
+          setEl('send-result', box('err',
+            `fee ${fmtBit(feeBit)} exceeds amount ${fmtBit(amtBit)}`)); return;
+        }
+      } else {
+        // Fee on top; recipient gets exactly amtBit
+        const totalNeed = amtBit + feeBit;
+        if (totalIn < totalNeed) {
+          setEl('send-result', box('err',
+            `selected ${fmtBit(totalIn)}, need ${fmtBit(amtBit)} + ${fmtBit(feeBit)} fee`)); return;
+        }
+        recipBit  = amtBit;
+        changeBit = totalIn - amtBit - feeBit;
+      }
+
+      const outputs = [{ script: p2pkhScript(recipPkh), valueBit: recipBit }];
+      if (changeBit > 0) {
+        const changeAddr = await rpc('getrawchangeaddress');
+        const changePkh  = await addrToPkh(changeAddr);
+        outputs.push({ script: p2pkhScript(changePkh), valueBit: changeBit });
+      }
+      const inputs  = selUtxos.map(u => ({ txid: u.txid, vout: u.vout, sequence: 0xffffffff }));
+      const prevtxs = selUtxos.map(u => ({
+        txid: u.txid, vout: u.vout, scriptPubKey: u.scriptPubKey, amount: u.bit / 1e8
+      }));
+      const rawHex = buildRawTx(1, inputs, outputs, 0);
+      const signed = await rpc('signrawtransactionwithwallet', [rawHex, prevtxs]);
+      if (!signed.complete) throw new Error('signing incomplete');
+      const txid = await rpc('sendrawtransaction', [signed.hex]);
+      const modeNote = subtractFee
+        ? `recipient receives ${fmtBit(recipBit)} (fee ${fmtBit(feeBit)} deducted)`
+        : `recipient receives ${fmtBit(recipBit)}`;
+      flashOk('send-result',
+        `sent ✓ · ${modeNote}<br><span style="font-size:11px;word-break:break-all">txid: ${txid}</span>`);
+      await refreshBalance();
+    } catch(e) { setEl('send-result', box('err', e.message)); }
+    finally { btnS.disabled = false; }
+  } else {
+    // Simple path
+    setEl('send-result', box('info', 'sending…'));
+    let cltvLocks = [];
+    try {
+      // Lock CLTV UTXOs so node coin selection skips them
+      const allUtxos = await rpc('listunspent', [0, 9999999]);
+      cltvLocks = allUtxos
+        .filter(u => isCLTVScript(u.scriptPubKey || ''))
+        .map(u => ({ txid: u.txid, vout: u.vout }));
+      if (cltvLocks.length > 0) await rpc('lockunspent', [false, cltvLocks]);
+      const txid = await rpc('sendtoaddress', [addr, parseFloat(amt.toFixed(8))]);
+      flashOk('send-result',
+        `sent ✓<br><span style="font-size:11px;word-break:break-all">txid: ${txid}</span>`);
+      await refreshBalance();
+    } catch(e) { setEl('send-result', box('err', e.message)); }
+    finally {
+      if (cltvLocks.length > 0) await rpc('lockunspent', [true, cltvLocks]).catch(() => {});
+      btnS.disabled = false;
+    }
+  }
+}
+
+function onTX1Input() {
+  const kbit = parseFloat(document.getElementById('tx1-amount').value);
+  const el   = document.getElementById('tx1-output-preview');
+  if (!kbit || isNaN(kbit) || kbit <= 0) {
+    el.innerHTML = 'enter amount to preview'; return;
+  }
+  const amtBit = Math.round(kbit * 1000);
+  if (amtBit < 100000) { el.innerHTML = '<span style="color:#991b1b">minimum 100 ᴋ</span>'; return; }
+  if (amtBit > 1e8)    { el.innerHTML = '<span style="color:#991b1b">maximum 100,000 ᴋ (1 𝕄)</span>'; return; }
+  const cltvH = S.height > 0 ? S.height + 1 + 432 : '?';
+  el.innerHTML =
+    `output[0]: ${fmtBit(amtBit)}` +
+    `<span style="float:right;color:#b3afa8">1 CLTV output · zero fee</span>`;
+}
+
+async function doTX1() {
+  if (!checkReady('tx1-result')) return;
+  const addr   = document.getElementById('tx1-addr').value.trim();
+  const amtBit = Math.round(parseFloat(document.getElementById('tx1-amount').value) * 1000);
+  if (!addr) { setEl('tx1-result', box('err', 'enter recipient address')); return; }
+  if (!amtBit || amtBit < 100000) { setEl('tx1-result', box('err', 'minimum 100 ᴋ')); return; }
+  if (amtBit > 1e8) { setEl('tx1-result', box('err', 'maximum 100,000 ᴋ (1 𝕄)')); return; }
+  let recipPkh;
+  try { recipPkh = hexOf(await addrToPkh(addr)); }
+  catch(e) { setEl('tx1-result', box('err', 'invalid address: ' + e.message)); return; }
+  const btn1 = document.querySelector('[onclick="doTX1()"]');
+  btn1.disabled = true;
+  setEl('tx1-result', box('info', 'building TX1…'));
+  try {
+    const chain = await rpc('getblockchaininfo', [], null);
+    S.height = chain.blocks;
+    const cltvHeight = S.height + 1 + 432;
+
+    // TX1 requires exactly one P2PKH input.
+    const allUtxos = await rpc('listunspent', [1, 9999999]);
+    const spendable = allUtxos.filter(u => isP2PKH(u.scriptPubKey||''));
+
+    const advCbs = S_adv.tx1
+      ? [...document.querySelectorAll('.adv-utxo-cb-tx1')].filter(cb => cb.checked)
+      : [];
+
+    let selUtxo;
+    if (advCbs.length > 0) {
+      // Manual path: must select exactly 1 UTXO
+      if (advCbs.length !== 1) {
+        setEl('tx1-result', box('err',
+          `TX1 requires exactly 1 input — ${advCbs.length} UTXOs selected`));
+        return;
+      }
+      const cb  = advCbs[0];
+      const bit = parseInt(cb.dataset.bit);
+      if (bit < amtBit) {
+        setEl('tx1-result', box('err',
+          `selected UTXO ${fmtBit(bit)} is less than amount ${fmtBit(amtBit)}`));
+        return;
+      }
+      selUtxo = {
+        txid: cb.dataset.txid, vout: parseInt(cb.dataset.vout),
+        bit, amount: bit / 1e8, address: cb.dataset.addr,
+        scriptPubKey: cb.dataset.spk || ''
+      };
+    } else {
+      // Auto path: find the smallest single UTXO that covers amtBit
+      const candidates = spendable
+        .filter(u => Math.round(u.amount * 1e8) >= amtBit)
+        .sort((a, b) => a.amount - b.amount); // smallest-first to minimise change
+      if (candidates.length === 0) {
+        const maxBit = spendable.reduce((m, u) => Math.max(m, Math.round(u.amount * 1e8)), 0);
+        setEl('tx1-result', box('err',
+          `no single UTXO covers ${fmtBit(amtBit)}` +
+          (maxBit > 0 ? ` — largest is ${fmtBit(maxBit)}` : '') +
+          '; consolidate funds first (standard send)'));
+        return;
+      }
+      const c = candidates[0];
+      selUtxo = { ...c, bit: Math.round(c.amount * 1e8) };
+    }
+
+    const senderAddr = selUtxo.address;
+    if (!senderAddr) throw new Error('UTXO is missing address — use advanced mode to select manually');
+
+    const totalIn   = selUtxo.bit;
+    const changeBit = totalIn - amtBit;
+
+    // output[0] = CLTV+P2PKH for the full payment amount
+    const cScript = cltvScript(cltvHeight, recipPkh);
+    const outputs  = [{ script: cScript, valueBit: amtBit }];
+
+    // optional output[1] = P2PKH change back to sender
+    if (changeBit > 0) {
+      if (changeBit < 10000) { // MIN_OUTPUT_VALUE = 10 kbit (consensus)
+        setEl('tx1-result', box('err',
+          `change ${fmtBit(changeBit)} is below 10 ᴋ minimum (MIN_OUTPUT_VALUE) — ` +
+          `adjust amount or use advanced mode to pick a different UTXO`));
+        return;
+      }
+      const senderPkh = await addrToPkh(senderAddr);
+      outputs.push({ script: p2pkhScript(senderPkh), valueBit: changeBit });
+    }
+
+    // fee == 0 is guaranteed here since inputs == outputs with a single input
+    const inputs  = [{ txid: selUtxo.txid, vout: selUtxo.vout, sequence: 0xffffffff }];
+    const prevtxs = [{ txid: selUtxo.txid, vout: selUtxo.vout,
+      scriptPubKey: selUtxo.scriptPubKey, amount: selUtxo.amount }];
+    const rawHex  = buildRawTx(1, inputs, outputs, 0);
+    const signed  = await rpc('signrawtransactionwithwallet', [rawHex, prevtxs]);
+    if (!signed.complete) throw new Error('signing incomplete');
+    const txid = await rpc('sendrawtransaction', [signed.hex]);
+    flashOk('tx1-result',
+      `TX1 sent ✓<br>` +
+      `<span style="font-size:11px">${fmtBit(amtBit)} → ${addr.slice(0,22)}… · CLTV: ${cltvHeight}</span>` +
+      (changeBit > 0
+        ? `<br><span style="font-size:11px;color:#9a9690">change ${fmtBit(changeBit)} → ${senderAddr.slice(0,22)}…</span>`
+        : '') +
+      `<br><span style="font-size:11px;word-break:break-all">txid: ${txid}</span>`);
+    await refreshBalance();
+    await loadCLTVUtxos();
+  } catch(e) { setEl('tx1-result', box('err', e.message)); }
+  finally { btn1.disabled = false; }
+}
+let _cltvRefreshing = false;
+let _cltvPending    = false;
+async function loadCLTVUtxos() {
+  if (!S.connected || CFG.wallet == null) return;
+  if (_cltvRefreshing) { _cltvPending = true; return; }
+  _cltvRefreshing = true;
+  _cltvPending    = false;
+  try {
+    const [utxos, chain] = await Promise.all([
+      rpc('listunspent', [1, 9999999]),
+      rpc('getblockchaininfo', [], null)
+    ]);
+    S.height = chain.blocks;
+
+    // Advanced: filter to selected addresses only
+    let allowedPkhs = null;
+    if (S_adv.tx2) {
+      const selCbs = [...document.querySelectorAll('.tx2-addr-cb')].filter(cb => cb.checked);
+      if (selCbs.length > 0) {
+        allowedPkhs = new Set();
+        for (const cb of selCbs) {
+          try { allowedPkhs.add(hexOf(await addrToPkh(cb.value))); } catch(e) {}
+        }
+      }
+    }
+
+    const found = [];
+    for (const u of utxos) {
+      const spk = u.scriptPubKey || '';
+      if (!isCLTVScript(spk)) continue;
+      if (allowedPkhs) {
+        const pkh = pkhFromCLTVScript(spk);
+        if (!allowedPkhs.has(pkh)) continue;
+      }
+      found.push({
+        txid:      u.txid,
+        vout:      u.vout,
+        bit:       Math.round(u.amount * 1e8),
+        amount:    u.amount,
+        scriptHex: spk,
+        cltvH:     parseCLTVHeight(spk),
+        confs:     u.confirmations != null ? u.confirmations : 0
+      });
+    }
+
+    S.cltvUtxos = found;
+    const wrap = document.getElementById('tx2-utxo-wrap');
+    if (!wrap) return; // called before TX2 panel rendered
+    if (S.cltvUtxos.length === 0) {
+      setEl('tx2-scan-result', '');
+      wrap.style.display = 'none';
+      return;
+    }
+    tx2VisibleCount = TX2_PAGE;
+    renderCLTVTable();
+    wrap.style.display = 'block';
+    setEl('tx2-scan-result', '');
+    updateTX2Summary();
+  } catch(e) {
+    const el = document.getElementById('tx2-scan-result');
+    if (el) el.innerHTML = box('err', e.message);
+  } finally {
+    _cltvRefreshing = false;
+    if (_cltvPending) loadCLTVUtxos();
+  }
+}
+
+function setTX2Sort(mode) {
+  tx2SortMode = mode;
+  tx2VisibleCount = TX2_PAGE;
+  document.getElementById('tx2-sort-locktime').style.fontWeight = mode === 'locktime' ? 'bold' : '';
+  document.getElementById('tx2-sort-recent').style.fontWeight   = mode === 'recent'   ? 'bold' : '';
+  renderCLTVTable();
+}
+
+function renderCLTVTable() {
+  const container = document.getElementById('tx2-utxo-body');
+
+  // Step 1: spread-based groups (each group = 1 TX2), sorted by chosen mode
+  let spreadGroups = groupCLTVBySpread(S.cltvUtxos);
+  if (tx2SortMode === 'recent') {
+    // Sort groups by most recently confirmed tx (fewest confirmations first)
+    spreadGroups = spreadGroups.slice().sort((a, b) => {
+      const minConfsA = Math.min(...a.map(u => u.confs));
+      const minConfsB = Math.min(...b.map(u => u.confs));
+      return minConfsA - minConfsB;
+    });
+  }
+
+  const visible = spreadGroups.slice(0, tx2VisibleCount);
+  const remaining = spreadGroups.length - tx2VisibleCount;
+
+  function renderGroup(group, gi) {
+    const gid       = `tg-${gi}`;
+    const totalBit  = group.reduce((s,u) => s+u.bit, 0);
+    const minH      = group[0].cltvH;
+    const maxH      = group[group.length-1].cltvH;
+    const spread    = maxH - minH;
+    const allUnlocked  = group.every(u => u.cltvH + 1 <= S.height);
+    const anyUnlocked  = group.some(u => u.cltvH + 1 <= S.height);
+
+    let statusHtml;
+    if (allUnlocked) {
+      statusHtml = '<span class="tx2-status avail">unlocked · spendable</span>';
+    } else if (anyUnlocked) {
+      const nUnlocked = group.filter(u => u.cltvH + 1 <= S.height).length;
+      statusHtml = `<span class="tx2-status locked">${nUnlocked}/${group.length} unlocked</span>`;
+    } else {
+      const blocksLeft = minH + 1 - S.height;
+      statusHtml = `<span class="tx2-status locked">locked · ${blocksLeft} blocks</span>`;
+    }
+
+    const txMap = {};
+    for (let i = 0; i < S.cltvUtxos.length; i++) {
+      const u = S.cltvUtxos[i];
+      if (!group.includes(u)) continue;
+      if (!txMap[u.txid]) txMap[u.txid] = { txid: u.txid, cltvH: u.cltvH, idxs: [] };
+      txMap[u.txid].idxs.push(i);
+    }
+    const txList = Object.values(txMap);
+
+    const txRows = txList.map(tg => {
+      const utxos    = tg.idxs.map(i => S.cltvUtxos[i]);
+      const txBit    = utxos.reduce((s,u) => s+u.bit, 0);
+      const unlocked = tg.cltvH + 1 <= S.height;
+      const blocksLeft = tg.cltvH + 1 - S.height;
+      const statusText = unlocked
+        ? '<span class="tx2-status avail">unlocked</span>'
+        : `<span class="tx2-status locked">locked · ${blocksLeft} blocks</span>`;
+      const pkhHex = pkhFromCLTVScript(utxos[0].scriptHex);
+      const cardId = 'tx2card-' + tg.txid;
+      resolveTX2CardAddrs(cardId, pkhHex, tg.txid);
+      return `<div class="tx2-card ${unlocked?'':'disabled'}" id="${cardId}" data-idxs="${tg.idxs.join(',')}"
+          ${unlocked?'tabindex="0" role="button"':''} onclick="${unlocked?'toggleTX2Card(this)':''}">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px">
+          <span style="font-size:10px;color:#b3afa8">Time: <span id="${cardId}-time">…</span></span>
+          <span class="tx2-total">${fmtBit(txBit)}</span>
+        </div>
+        <div style="font-size:10px;color:#9a9690;margin:2px 0">Recipient: <span id="${cardId}-to" style="font-family:var(--f-mono)">…</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <div class="tx2-txid" style="margin-bottom:0">${tg.txid}</div>
+          <span class="tx2-lock" style="flex-shrink:0;margin-left:8px">${statusText}</span>
+        </div>
+      </div>`;
+    }).join('');
+
+    const rangeLabel = minH === maxH ? `block ${minH}` : `block ${minH}–${maxH}`;
+    const spreadLabel = spread > 0 ? ` <span style="color:#b3afa8;font-size:11px">spread ${spread}</span>` : '';
+
+    return `<div class="tx2-group" id="${gid}">
+      <div class="tx2-group-hdr" tabindex="0" role="button" onclick="toggleTX2Group('${gid}')">
+        <span class="tx2-group-arrow" id="${gid}-arrow">▾</span>
+        <span class="tx2-group-range">${rangeLabel}</span>${spreadLabel}
+        <span class="tx2-group-info">${txList.length} tx · ${fmtBit(totalBit)}</span>
+        <span class="tx2-group-status">${statusHtml}</span>
+        <span class="tx2-group-btns" onclick="event.stopPropagation()">
+          <button class="btn sm" onclick="selectTX2Group('${gid}')">select all</button>
+          <button class="btn sm" onclick="deselectTX2Group('${gid}')">deselect</button>
+        </span>
+      </div>
+      <div class="tx2-group-body" id="${gid}-body">${txRows}</div>
+    </div>`;
+  }
+
+  const groupsHtml = visible.map((group, gi) => renderGroup(group, gi)).join('');
+
+  const loadMoreHtml = remaining > 0
+    ? `<div style="text-align:center;margin:10px 0">
+        <button class="btn" onclick="loadMoreTX2Groups()" style="width:100%;padding:7px 0;font-size:12px">
+          Load more (${remaining} remaining)
+        </button>
+       </div>`
+    : '';
+
+  container.innerHTML = groupsHtml + loadMoreHtml;
+}
+
+// Resolve recipient (sync via pkhToAddr) and sender (async via getrawtransaction)
+async function resolveTX2CardAddrs(cardId, pkhHex, txid) {
+  try {
+    const toAddr = await pkhToAddr(pkhHex);
+    const toEl = document.getElementById(cardId + '-to');
+    if (toEl) toEl.textContent = toAddr;
+  } catch(e) {}
+  try {
+    const raw = await rpc('getrawtransaction', [txid, 1]);
+    const ts  = raw?.blocktime || raw?.time || 0;
+    const timeEl = document.getElementById(cardId + '-time');
+    if (timeEl) timeEl.textContent = ts ? fmtTime(ts) : 'unconfirmed';
+  } catch(e) {
+    const timeEl = document.getElementById(cardId + '-time');
+    if (timeEl) timeEl.textContent = '—';
+  }
+}
+
+function loadMoreTX2Groups() {
+  tx2VisibleCount += TX2_PAGE;
+  renderCLTVTable();
+}
+
+function toggleTX2Group(gid) {
+  const body  = document.getElementById(gid + '-body');
+  const arrow = document.getElementById(gid + '-arrow');
+  const open  = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  arrow.textContent  = open ? '▸' : '▾';
+}
+
+function selectTX2Group(gid) {
+  document.querySelectorAll(`#${gid} .tx2-card:not(.disabled)`)
+    .forEach(c => c.classList.add('selected'));
+  updateTX2Summary();
+}
+
+function deselectTX2Group(gid) {
+  document.querySelectorAll(`#${gid} .tx2-card`)
+    .forEach(c => c.classList.remove('selected'));
+  updateTX2Summary();
+}
+
+function toggleTX2Card(el) {
+  el.classList.toggle('selected');
+  updateTX2Summary();
+}
+
+function selectAllTX2() {
+  document.querySelectorAll('.tx2-card:not(.disabled)').forEach(c => c.classList.add('selected'));
+  updateTX2Summary();
+}
+
+function deselectAllTX2() {
+  document.querySelectorAll('.tx2-card').forEach(c => c.classList.remove('selected'));
+  updateTX2Summary();
+}
+
+function getSelectedCLTV() {
+  const sel = [];
+  document.querySelectorAll('.tx2-card.selected').forEach(card => {
+    const idxs = card.dataset.idxs.split(',').map(Number);
+    for (const i of idxs) sel.push(S.cltvUtxos[i]);
+  });
+  return sel;
+}
+
+function groupCLTVBySpread(utxos) {
+  const sorted = [...utxos].sort((a,b) => a.cltvH - b.cltvH);
+  const groups = [];
+  let cur = [];
+  for (const u of sorted) {
+    if (cur.length === 0) { cur.push(u); continue; }
+    if (u.cltvH - cur[0].cltvH > 31) { groups.push(cur); cur = [u]; }
+    else cur.push(u);
+  }
+  if (cur.length > 0) groups.push(cur);
+  return groups;
+}
+
+function updateTX2Summary() {
+  const sel = getSelectedCLTV();
+  if (sel.length === 0) { setEl('tx2-summary', ''); return; }
+  const total  = sel.reduce((s,u) => s+u.bit, 0);
+  const maxH   = Math.max(...sel.map(u => u.cltvH));
+  const minH   = Math.min(...sel.map(u => u.cltvH));
+  const spread = maxH - minH;
+  const txCount = new Set(sel.map(u=>u.txid)).size;
+  let spreadNote = '';
+  if (spread > 31) {
+    const groups = groupCLTVBySpread(sel);
+    spreadNote = ` <span style="color:#92600e">⚠ spread ${spread} — auto-split into ${groups.length} TX2</span>`;
+  }
+  setEl('tx2-summary',
+    `selected: ${txCount} tx · ${fmtBit(total)} · nLockTime: ${maxH}${spreadNote}`);
+  updateTX2Remainder();
+}
+
+let S_tx2MultiOut = false;
+
+function toggleTX2MultiOut() {
+  S_tx2MultiOut = !S_tx2MultiOut;
+  const div = document.getElementById('tx2-multiout');
+  const btn = document.querySelector('[onclick="toggleTX2MultiOut()"]');
+  div.style.display = S_tx2MultiOut ? 'block' : 'none';
+  btn.textContent   = S_tx2MultiOut ? 'multiple outputs ▾' : 'multiple outputs ▸';
+  if (S_tx2MultiOut && document.getElementById('tx2-dest-list').children.length === 0) {
+    addTX2DestRow();
+  }
+}
+
+function updateTX2Remainder() {
+  if (!S_tx2MultiOut) return;
+  const sel = getSelectedCLTV();
+  const totalBit = sel.reduce((s,u) => s+u.bit, 0);
+  let additionalBit = 0;
+  document.querySelectorAll('.tx2-dest-row input[type="number"]')
+    .forEach(el => additionalBit += Math.round((parseFloat(el.value) || 0) * 1000));
+  const remainderBit = totalBit - additionalBit;
+  const el = document.getElementById('tx2-primary-remainder');
+  if (!el) return;
+  if (sel.length === 0) {
+    el.style.color = '#b3afa8';
+    el.textContent = 'select UTXOs first';
+  } else if (remainderBit < 0) {
+    el.style.color = '#991b1b';
+    el.innerHTML = `overflow by ${fmtBit(-remainderBit)} — reduce additional outputs`;
+  } else if (remainderBit === 0) {
+    el.style.color = '#9a9690';
+    el.innerHTML = 'receives: 0 (entire amount allocated to additional outputs)';
+  } else {
+    el.style.color = '#166534';
+    el.innerHTML = `receives: ${fmtBit(remainderBit)}`;
+  }
+}
+
+function addTX2DestRow() {
+  const list = document.getElementById('tx2-dest-list');
+  if (list.children.length >= 2) return; // max 3 outputs total (primary + 2 additional)
+  const row  = document.createElement('div');
+  row.className = 'tx2-dest-row';
+  row.innerHTML =
+    `<input type="text" placeholder="M… (empty = new address)">` +
+    `<input type="number" min="0" step="any" placeholder="kbit" onwheel="this.blur()"` +
+    ` oninput="updateTX2Remainder()">` +
+    `<span class="unit">ᴋ</span>` +
+    `<button class="btn sm" onclick="removeTX2DestRow(this)">×</button>`;
+  list.appendChild(row);
+  updateTX2Remainder();
+}
+
+function removeTX2DestRow(btn) {
+  btn.closest('.tx2-dest-row').remove();
+  updateTX2Remainder();
+}
+
+async function doTX2() {
+  if (!checkReady('tx2-result')) return;
+  const sel = getSelectedCLTV();
+  if (sel.length === 0) { setEl('tx2-result', box('err', 'select at least one UTXO')); return; }
+
+  // Gather destinations: compute proportions from absolute amounts
+  const totalSel = sel.reduce((s,u) => s+u.bit, 0);
+  let allDests = []; // [{addr, bit}] primary first
+
+  if (S_tx2MultiOut) {
+    const additionals = [];
+    let additionalBit = 0;
+    for (const row of document.querySelectorAll('.tx2-dest-row')) {
+      const addr = row.querySelector('input[type="text"]').value.trim();
+      const bit  = Math.round((parseFloat(row.querySelector('input[type="number"]').value) || 0) * 1000);
+      if (bit <= 0) { setEl('tx2-result', box('err', 'all additional amounts must be > 0')); return; }
+      additionals.push({ addr, bit });
+      additionalBit += bit;
+    }
+    const remainderBit = totalSel - additionalBit;
+    if (remainderBit < 0) {
+      setEl('tx2-result', box('err',
+        `additional outputs total ${fmtBit(additionalBit)} exceeds selected ${fmtBit(totalSel)}`));
+      return;
+    }
+    const primaryAddr = document.getElementById('tx2-dest').value.trim();
+    if (remainderBit > 0) allDests.push({ addr: primaryAddr, bit: remainderBit });
+    allDests = allDests.concat(additionals);
+  } else {
+    allDests = [{ addr: document.getElementById('tx2-dest').value.trim(), bit: totalSel }];
+  }
+
+  // TX2 must have 1–3 outputs (consensus rule)
+  if (allDests.length === 0) { setEl('tx2-result', box('err', 'no outputs defined')); return; }
+  if (allDests.length > 3) {
+    setEl('tx2-result', box('err',
+      `TX2 max 3 outputs — ${allDests.length} defined; reduce additional outputs`));
+    return;
+  }
+  const btn2 = document.querySelector('[onclick="doTX2()"]');
+  btn2.disabled = true;
+  setEl('tx2-result', box('info', 'building TX2…'));
+  try {
+    // Resolve addresses (empty = new wallet address)
+    const dests = [];
+    for (const d of allDests) {
+      const addr = d.addr || await rpc('getnewaddress');
+      let pkh;
+      try { pkh = await addrToPkh(addr); }
+      catch(e) { setEl('tx2-result', box('err', 'invalid address: ' + e.message)); return; }
+      dests.push({ addr, pkh, bit: d.bit });
+    }
+
+    // Auto-group by CLTV spread ≤ 31, then chunk any group > 1000 inputs
+    const groups = [];
+    for (const g of groupCLTVBySpread(sel)) {
+      if (g.length > 1000) {
+        for (let i = 0; i < g.length; i += 1000) groups.push(g.slice(i, i + 1000));
+      } else {
+        groups.push(g);
+      }
+    }
+    const results = [];
+
+    for (const group of groups) {
+      const cltvHs    = group.map(u => u.cltvH);
+      const nLockTime = Math.max(...cltvHs);   // minimum satisfying OP_CLTV consensus
+      const groupBit  = group.reduce((s,u) => s+u.bit, 0);
+
+      // Each dest gets proportion = dest.bit / totalSel applied to this group's total
+      // Last output absorbs rounding remainder → sum always equals groupBit (zero fee)
+      let allocated = 0;
+      const outputs = [];
+      for (let i = 0; i < dests.length; i++) {
+        const isLast = i === dests.length - 1;
+        const bit = isLast
+          ? groupBit - allocated
+          : Math.floor(groupBit * dests[i].bit / totalSel);
+        if (bit <= 0) {
+          setEl('tx2-result', box('err',
+            `output to ${dests[i].addr.slice(0,16)}… rounds to 0 ʙ — increase amount`));
+          return;
+        }
+        outputs.push({ script: p2pkhScript(dests[i].pkh), valueBit: bit });
+        allocated += bit;
+      }
+
+      const inputs  = group.map(u => ({ txid: u.txid, vout: u.vout, sequence: 0xfffffffe }));
+      const prevtxs = group.map(u => ({
+        txid: u.txid, vout: u.vout, scriptPubKey: u.scriptHex, amount: u.amount
+      }));
+      const rawHex = buildRawTx(1, inputs, outputs, nLockTime);
+      const signed = await rpc('signrawtransactionwithwallet', [rawHex, prevtxs]);
+      if (!signed.complete) throw new Error('signing incomplete');
+      const txid = await rpc('sendrawtransaction', [signed.hex]);
+      results.push({ txid, groupBit, inputs: group.length, nLockTime });
+    }
+
+    // Build result display
+    const outSummary = dests.map(d =>
+      `<span style="font-size:11px">${fmtBit(d.bit)} → ${d.addr.slice(0,22)}…</span>`
+    ).join('<br>');
+    const txSummary = results.map((r,i) =>
+      `<span style="font-size:11px">${groups.length > 1 ? `TX2-${i+1}: ` : ''}` +
+      `${r.inputs} inputs · ${fmtBit(r.groupBit)} · nLockTime: ${r.nLockTime}</span><br>` +
+      `<span style="font-size:11px;word-break:break-all;color:#6b6760">txid: ${r.txid}</span>`
+    ).join('<br>');
+
+    flashOk('tx2-result',
+      `TX2 sent ✓` +
+      (groups.length > 1 ? ` <span style="font-size:11px">(${groups.length} transactions)</span>` : '') +
+      `<br>${outSummary}<br>${txSummary}`);
+    await refreshBalance();
+    await loadCLTVUtxos();
+  } catch(e) { setEl('tx2-result', box('err', e.message)); }
+  finally { btn2.disabled = false; }
+}
+const HIST_PAGE = 20;
+const HIST_FETCH = 400;
+let histCache = [];   // merged txs loaded so far (newest first)
+let histShown = 0;    // rows currently rendered
+let histRpcSkip = 0;  // raw-entry skip for next RPC call
+let histExhausted = false; // no more entries from node
+
+function fmtTime(ts)  { if(!ts) return '—'; const d=new Date(ts*1000); return d.toLocaleDateString()+' '+d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'}); }
+function fmtTimeShort(ts) {
+  if(!ts) return '—';
+  const now = Date.now(), age = now - ts*1000;
+  if (age > 86400000) {
+    const days = Math.floor(age / 86400000);
+    return days + ' day' + (days>1?'s':'') + ' ago';
+  }
+  const d = new Date(ts*1000);
+  return d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+}
+function isP2PKH(hex) { return hex.startsWith('76a914')&&hex.endsWith('88ac')&&hex.length===50; }
+function isTX1raw(raw){ return !raw.vin?.[0]?.coinbase&&(raw.vout||[]).some(v=>isCLTVScript(v.scriptPubKey?.hex||'')); }
+function kvHtml(k,v)  { return `<div class="kv"><span class="k">${k}</span><span class="v">${v}</span></div>`; }
+
+function mergeTxEntries(raw) {
+  const map = new Map();
+  for (const t of raw) {
+    if (map.has(t.txid)) {
+      const e = map.get(t.txid);
+      e.amount += t.amount;
+      if (t.blocktime) e.blocktime = t.blocktime;
+      if (t.blockhash) e.blockhash = t.blockhash;
+      e.confirmations = t.confirmations;
+    } else {
+      map.set(t.txid, {
+        txid: t.txid, amount: t.amount,
+        confirmations: t.confirmations,
+        blocktime: t.blocktime || t.time || 0,
+        blockhash: t.blockhash || null,
+        blockheight: t.blockheight || null
+      });
+    }
+  }
+  return [...map.values()];
+}
+
+function renderHistRow(t) {
+  const bit = Math.round(Math.abs(t.amount) * 1e8);
+  const pos = t.amount >= 0;
+  const conf = t.confirmations > 0
+    ? (t.blockheight ? 'block ' + t.blockheight : t.confirmations + ' conf')
+    : 'unconfirmed';
+  const timeStr = fmtTimeShort(t.blocktime);
+  return `<div class="hist-row" tabindex="0" role="button" onclick="toggleHistDetail(this,'${t.txid}',${t.confirmations>0})">
+    <div class="hist-row-main">
+      <span class="hist-time" style="flex-shrink:0;margin-right:10px">${timeStr}</span>
+      <span class="hist-txid">${t.txid}</span>
+      <span class="hist-meta">
+        <span class="hist-amt ${pos?'pos':''}">${pos?'+':'−'}${fmtBit(bit)}</span>
+        <span class="hist-conf">${conf}</span>
+        <span class="hist-arrow">▸</span>
+      </span>
+    </div>
+    <div class="hist-detail"></div>
+  </div>`;
+}
+
+async function toggleHistDetail(el, txid, confirmed) {
+  const detail = el.querySelector('.hist-detail');
+  const arrow  = el.querySelector('.hist-arrow');
+  if (detail.classList.contains('open')) {
+    detail.classList.remove('open');
+    arrow.textContent = '▸';
+    return;
+  }
+  detail.classList.add('open');
+  arrow.textContent = '▾';
+  if (detail.dataset.loaded) return;
+  detail.dataset.loaded = '1';
+  detail.innerHTML = '<div style="color:#b3afa8;font-size:11px;padding:4px 0">loading…</div>';
+  try {
+    let raw;
+    try {
+      raw = await rpc('getrawtransaction', [txid, 1]);
+    } catch(e) {
+      const wt = await rpc('gettransaction', [txid, true]);
+      raw = await rpc('decoderawtransaction', [wt.hex]);
+      raw.confirmations = wt.confirmations || 0;
+      raw.blocktime     = wt.blocktime || wt.timereceived || 0;
+      raw.blockhash     = wt.blockhash || null;
+    }
+    const confs = raw.confirmations || 0;
+    const isCB  = !!(raw.vin?.[0]?.coinbase);
+    const tx1   = !isCB && isTX1raw(raw);
+
+    let tx2 = false;
+    if (!isCB && !tx1 && raw.locktime > 0) {
+      const prevSpks = await Promise.allSettled(
+        (raw.vin || []).map(async inp => {
+          try {
+            const p = await rpc('getrawtransaction', [inp.txid, 1]);
+            return p.vout[inp.vout]?.scriptPubKey?.hex || '';
+          } catch(e) {
+            const wt = await rpc('gettransaction', [inp.txid, true]);
+            const dec = await rpc('decoderawtransaction', [wt.hex]);
+            return dec.vout[inp.vout]?.scriptPubKey?.hex || '';
+          }
+        })
+      );
+      if (prevSpks.every(r => r.status === 'fulfilled'))
+        tx2 = prevSpks.every(r => isCLTVScript(r.value)) &&
+              (raw.vout || []).every(v => isP2PKH(v.scriptPubKey?.hex || ''));
+    }
+
+    let blockHeight = raw.blockheight || '—';
+    if (confs>0 && raw.blockhash && blockHeight==='—') {
+      try { const blk=await rpc('getblock',[raw.blockhash,1]); blockHeight=blk.height; } catch(e){}
+    }
+
+    let h = '<div style="margin-bottom:8px">';
+    h += kvHtml('status', confs>0 ? `confirmed · block ${blockHeight}` : 'unconfirmed (mempool)');
+    h += kvHtml('time',   fmtTime(raw.time||raw.blocktime));
+    if (!tx2 && raw.locktime>0) h += kvHtml('locktime', String(raw.locktime));
+    if (tx2) h += kvHtml('type', '<span class="hist-tag tx2">TX2 spend</span>');
+    if (tx1) h += kvHtml('type', '<span class="hist-tag tx1">TX1 payment</span>');
+    h += '</div>';
+
+    detail.innerHTML = h;
+  } catch(e) {
+    detail.innerHTML = `<div style="color:#991b1b;font-size:11px;padding:4px 0">${e.message}</div>`;
+  }
+}
+
+async function loadHistory() {
+  if (!checkReady('history-list')) return;
+  histCache = []; histShown = 0; histRpcSkip = 0; histExhausted = false;
+  setEl('history-list', '<div class="hist-empty">loading…</div>');
+  document.getElementById('hist-loadmore-wrap').style.display = 'none';
+  await _fetchAndRenderHistory(true);
+}
+
+async function loadMoreHistory() {
+  if (histShown < histCache.length) {
+    _renderMoreHistRows();
+  } else if (!histExhausted) {
+    document.getElementById('hist-loadmore-btn').textContent = 'loading…';
+    await _fetchAndRenderHistory(false);
+  }
+}
+
+async function _fetchAndRenderHistory(reset) {
+  try {
+    const raw = await rpc('listtransactions', ['*', HIST_FETCH, histRpcSkip, true]);
+    histRpcSkip += HIST_FETCH;
+    if (!raw || raw.length === 0) {
+      histExhausted = true;
+    } else {
+      if (raw.length < HIST_FETCH) histExhausted = true;
+      const merged = mergeTxEntries(raw).reverse();
+      histCache = histCache.concat(merged);
+    }
+    if (reset && histCache.length === 0) {
+      setEl('history-list', '<div class="hist-empty">no transactions</div>');
+      return;
+    }
+    _renderMoreHistRows();
+  } catch(e) {
+    if (reset) setEl('history-list', box('err', e.message));
+    else { const b=document.getElementById('hist-loadmore-btn'); if(b) b.textContent='error: '+e.message.slice(0,40); }
+  }
+}
+
+function _renderMoreHistRows() {
+  const list = document.getElementById('history-list');
+  const nextBatch = histCache.slice(histShown, histShown + HIST_PAGE);
+  if (histShown === 0) {
+    list.innerHTML = nextBatch.map(renderHistRow).join('');
+  } else {
+    nextBatch.forEach(t => { list.insertAdjacentHTML('beforeend', renderHistRow(t)); });
+  }
+  histShown += nextBatch.length;
+  const remaining = histCache.length - histShown;
+  const wrap = document.getElementById('hist-loadmore-wrap');
+  const btn  = document.getElementById('hist-loadmore-btn');
+  const moreInNode = !histExhausted;
+  if (remaining > 0 || moreInNode) {
+    wrap.style.display = 'block';
+    btn.textContent = remaining > 0 ? `Load more (${remaining} remaining)` : 'Load more';
+  } else {
+    wrap.style.display = 'none';
+  }
+}
+
+function showPanel(id, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('#nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (id === 'addresses') loadAddresses();
+  if (id === 'history') loadHistory();
+  if (id === 'contacts') loadContacts();
+  if (id === 'peers') loadPeers();
+  if (id === 'tx2') refreshTX2Panel();
+}
+
+// Refresh the TX2 UTXO list on tab entry, preserving whichever tx cards were
+// already selected (renderCLTVTable() rebuilds the list from scratch, so a
+// plain refresh would otherwise silently clear an in-progress selection).
+async function refreshTX2Panel() {
+  const selectedIds = [...document.querySelectorAll('.tx2-card.selected')].map(c => c.id);
+  await loadCLTVUtxos();
+  if (selectedIds.length === 0) return;
+  let restored = false;
+  for (const cid of selectedIds) {
+    const el = document.getElementById(cid);
+    if (el && !el.classList.contains('disabled')) { el.classList.add('selected'); restored = true; }
+  }
+  if (restored) updateTX2Summary();
+}
+function setDot(color) { document.getElementById('dot').className = 'dot ' + color; }
+function setEl(id, html) { const e = document.getElementById(id); if(e) e.innerHTML = html; }
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function box(type, msg) { return `<div class="box ${type}">${msg}</div>`; }
+const _flashTimers = {};
+function flashMsg(id, html) {
+  clearTimeout(_flashTimers[id]);
+  setEl(id, html);
+  _flashTimers[id] = setTimeout(() => setEl(id, ''), 30000);
+}
+function flashOk(id, msg) { flashMsg(id, box('ok', msg)); }
+function checkReady(resultId) {
+  if (!S.connected) { if(resultId) setEl(resultId, box('err','not connected')); return false; }
+  if (CFG.wallet == null) { if(resultId) setEl(resultId, box('err','select a wallet')); return false; }
+  return true;
+}
+
+let _addrCache  = null;
+let _addrLoaded = false;
+
+async function loadAddresses() {
+  if (!checkReady('addresses-list')) return;
+
+  if (_addrCache) {
+    _renderAddressBook(_addrCache);
+    if (_addrLoaded) return;
+  } else {
+    setEl('addresses-list', '<div class="hist-empty">loading…</div>');
+  }
+
+  try {
+    const { named, addrMaps } = await fetchLabeledAddrs();
+    const book = [];
+    named.forEach((label, i) => {
+      for (const [addr, info] of Object.entries(addrMaps[i]))
+        if (info.purpose === 'receive') book.push({ label, addr });
+    });
+    book.sort((a, b) => a.label.localeCompare(b.label));
+    _addrCache  = book;
+    _addrLoaded = true;
+    _renderAddressBook(book);
+  } catch(e) { setEl('addresses-list', box('err', e.message)); }
+}
+
+async function fetchLabeledAddrs() {
+  await warmLabelsCache();
+  const named = (S.labels || []).filter(l => l);
+  const addrMaps = await Promise.all(named.map(l => rpc('getaddressesbylabel', [l]).catch(() => ({}))));
+  return { named, addrMaps };
+}
+
+function _renderAddressBook(book) {
+  window._bookAddrs  = book.map(a => a.addr);
+  if (!book.length) {
+    setEl('addresses-list', '<div class="hist-empty">no named addresses</div>');
+    return;
+  }
+  setEl('addresses-list', book.map((a, i) =>
+    `<div class="addr-row">
+      <span class="contact-name">${escapeHtml(a.label)}</span>
+      <span class="addr-mono">${escapeHtml(a.addr)}</span>
+      <span class="addr-btns">
+        <button class="btn sm" onclick="addrCopy(${i},this)">copy</button>
+        <button class="btn sm" onclick="addrCheck(${i})">check</button>
+        <button class="btn sm btn-del" onclick="deleteAddress(${i})">del</button>
+      </span>
+    </div>`
+  ).join(''));
+}
+
+function copyFlash(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.style.color = 'var(--green)'; btn.style.borderColor = 'var(--green)';
+    setTimeout(() => { btn.style.color = ''; btn.style.borderColor = ''; }, 800);
+  }).catch(() => {});
+}
+
+function addrCheck(i) {
+  const addr = (window._bookAddrs || [])[i];
+  if (!addr) return;
+  document.getElementById('addr-check-in').value = addr;
+  checkAddress();
+}
+
+function addrCopy(i, btn) {
+  const addr = (window._bookAddrs || [])[i];
+  if (addr) copyFlash(addr, btn);
+}
+
+async function deleteAddress(i) {
+  const addr = (window._bookAddrs || [])[i];
+  if (!addr) return;
+  await rpc('setlabel', [addr, '']).catch(() => {});
+  S.labels = null;
+  _addrLoaded = false;
+  await loadAddresses();
+}
+
+async function saveAddress() {
+  if (!checkReady('addresses-result')) return;
+  const label = document.getElementById('addr-label-in').value.trim();
+  const addr  = document.getElementById('addr-addr-in').value.trim();
+  if (!label) { setEl('addresses-result', box('err', 'name required')); return; }
+  const btn = document.querySelector('[onclick="saveAddress()"]');
+  btn.disabled = true;
+  try {
+    if (addr) {
+      const info = await rpc('getaddressinfo', [addr]).catch(() => null);
+      if (!info?.ismine) {
+        setEl('addresses-result', box('err', 'not a wallet address — use Contacts'));
+        return;
+      }
+      await rpc('setlabel', [addr, label]);
+    } else {
+      await rpc('getnewaddress', [label]);
+    }
+    document.getElementById('addr-label-in').value = '';
+    document.getElementById('addr-addr-in').value = '';
+    flashOk('addresses-result', `saved · ${escapeHtml(label)}`);
+    S.labels = null;
+    _addrLoaded = false;
+    await loadAddresses();
+  } catch(e) { setEl('addresses-result', box('err', e.message)); }
+  finally { btn.disabled = false; }
+}
+
+async function checkAddress() {
+  const addr = document.getElementById('addr-check-in').value.trim();
+  const el   = document.getElementById('addr-check-result');
+  if (!addr) { el.innerHTML = ''; return; }
+  el.innerHTML = '<div class="hist-empty">checking…</div>';
+  const btn = document.querySelector('[onclick="checkAddress()"]');
+  btn.disabled = true;
+  try {
+    let targetPkh;
+    try { targetPkh = hexOf(await addrToPkh(addr)); }
+    catch(e) { el.innerHTML = box('err', 'invalid address'); return; }
+
+    const [confirmed, mempool, chain, addrInfo] = await Promise.all([
+      rpc('listunspent', [1, 9999999]),
+      rpc('listunspent', [0, 0]),
+      rpc('getblockchaininfo', [], null),
+      rpc('getaddressinfo', [addr]).catch(() => null)
+    ]);
+    S.height = chain.blocks;
+
+    let avail = 0, availN = 0;
+    let unlocked = 0, unlockedN = 0;
+    let locked = 0, lockedN = 0, nearestH = Infinity;
+    let pending = 0, pendingN = 0;
+
+    for (const u of confirmed) {
+      const spk = u.scriptPubKey || '';
+      const bit = Math.round(u.amount * 1e8);
+      if (isCLTVScript(spk)) {
+        if (pkhFromCLTVScript(spk) !== targetPkh) continue;
+        const cltvH = parseCLTVHeight(spk);
+        if (cltvH + 1 <= S.height) { unlocked += bit; unlockedN++; }
+        else { locked += bit; lockedN++; if (cltvH < nearestH) nearestH = cltvH; }
+      } else if ((u.address || '') === addr) {
+        avail += bit; availN++;
+      }
+    }
+    for (const u of mempool) {
+      const spk = u.scriptPubKey || '';
+      if (isCLTVScript(spk) && pkhFromCLTVScript(spk) === targetPkh)
+        { pending += Math.round(u.amount * 1e8); pendingN++; }
+    }
+
+    if (!availN && !unlockedN && !lockedN && !pendingN) {
+      el.innerHTML = addrInfo?.ismine
+        ? '<div class="hist-empty">no UTXOs for this address</div>'
+        : '<div class="hist-empty">not a wallet address</div>';
+      return;
+    }
+    let html = '';
+    if (availN)    html += kvHtml('Available',         `${fmtBit(avail)} · ${availN} UTXO`);
+    if (unlockedN) html += kvHtml('Unlocked (TX1)',    `${fmtBit(unlocked)} · ${unlockedN} UTXO · spend via TX2`);
+    if (lockedN)   html += kvHtml('Locked (TX1)',      `${fmtBit(locked)} · ${lockedN} UTXO · unlocks at block ${nearestH + 1}`);
+    if (pendingN)  html += kvHtml('Pending (mempool)', `${fmtBit(pending)} · ${pendingN} UTXO · unconfirmed`);
+    el.innerHTML = html;
+  } catch(e) { el.innerHTML = box('err', e.message); }
+  finally { btn.disabled = false; }
+}
+
+let _contactCache  = null;
+let _contactLoaded = false;
+
+async function loadContacts() {
+  if (!checkReady('contacts-list')) return;
+
+  if (_contactCache) {
+    _renderContacts(_contactCache);
+    if (_contactLoaded) return;
+  } else {
+    setEl('contacts-list', '<div class="hist-empty">loading…</div>');
+  }
+
+  try {
+    const { named, addrMaps } = await fetchLabeledAddrs();
+    if (!named.length) {
+      _contactCache  = [];
+      _contactLoaded = true;
+      setEl('contacts-list', '<div class="hist-empty">no contacts</div>');
+      return;
+    }
+    const contacts = [];
+    named.forEach((label, i) => {
+      for (const [addr, info] of Object.entries(addrMaps[i]))
+        if (info.purpose === 'send') contacts.push({ name: label, addr });
+    });
+    contacts.sort((a, b) => a.name.localeCompare(b.name));
+    _contactCache  = contacts;
+    _contactLoaded = true;
+    _renderContacts(contacts);
+  } catch(e) { setEl('contacts-list', box('err', e.message)); }
+}
+
+function _renderContacts(contacts) {
+  if (!contacts.length) {
+    setEl('contacts-list', '<div class="hist-empty">no contacts</div>');
+    return;
+  }
+  setEl('contacts-list', contacts.map((c, i) =>
+    `<div class="contact-card">
+      <span class="contact-name">${escapeHtml(c.name)}</span>
+      <span class="contact-addr">${escapeHtml(c.addr)}</span>
+      <span class="contact-btns">
+        <button class="btn sm" onclick="contactCopy(${i}, this)">copy</button>
+        <button class="btn sm" onclick="contactUse('send',${i})">Send</button>
+        <button class="btn sm" onclick="contactUse('tx1',${i})">TX1</button>
+        <button class="btn sm btn-del" onclick="deleteContact(${i})">del</button>
+      </span>
+    </div>`
+  ).join(''));
+  window._contactAddrs = contacts.map(c => c.addr);
+}
+
+function contactCopy(i, btn) {
+  const addr = (window._contactAddrs || [])[i];
+  if (addr) copyFlash(addr, btn);
+}
+
+function contactUse(tab, i) {
+  const addr = (window._contactAddrs || [])[i];
+  if (!addr) return;
+  if (tab === 'send') {
+    document.getElementById('send-addr').value = addr;
+    document.querySelectorAll('#nav button')[0].click();
+  } else if (tab === 'tx1') {
+    document.getElementById('tx1-addr').value = addr;
+    document.querySelectorAll('#nav button')[1].click();
+  }
+}
+
+async function deleteContact(i) {
+  const addr = (window._contactAddrs || [])[i];
+  if (!addr) return;
+  await rpc('setlabel', [addr, '']).catch(() => {});
+  S.labels = null;
+  _contactLoaded = false;
+  await loadContacts();
+}
+
+async function saveContact() {
+  if (!checkReady('contact-save-result')) return;
+  const addr = document.getElementById('contact-addr-input').value.trim();
+  const name = document.getElementById('contact-name-input').value.trim();
+  if (!addr) { setEl('contact-save-result', box('err', 'enter address')); return; }
+  if (!name) { setEl('contact-save-result', box('err', 'enter name')); return; }
+  try { await b58decodeCheck(addr); }
+  catch(e) { setEl('contact-save-result', box('err', 'invalid address: ' + e.message)); return; }
+  const btn = document.querySelector('[onclick="saveContact()"]');
+  btn.disabled = true;
+  try {
+    const info = await rpc('getaddressinfo', [addr]).catch(() => null);
+    if (info?.ismine) {
+      setEl('contact-save-result', box('err', 'wallet address — use Addresses book'));
+      return;
+    }
+    setEl('contact-save-result', box('info', 'saving…'));
+    await rpc('importaddress', [addr, name, false])
+      .catch(() => rpc('setlabel', [addr, name]));
+    flashOk('contact-save-result', `saved · ${escapeHtml(name)}`);
+    document.getElementById('contact-addr-input').value = '';
+    document.getElementById('contact-name-input').value = '';
+    S.labels = null;
+    _contactLoaded = false;
+    await loadContacts();
+  } catch(e) {
+    setEl('contact-save-result', box('err', e.message));
+  } finally { btn.disabled = false; }
+}
+
+function fmtServices(hex) {
+  const val = parseInt(hex, 16);
+  if (isNaN(val)) return hex;
+  const mask = SERVICE_FLAGS.reduce((a, [b]) => a | b, 0);
+  const labels = SERVICE_FLAGS.filter(([bit]) => val & bit).map(([, name]) => name);
+  const unknown = val & ~mask;
+  if (unknown) labels.push('0x' + unknown.toString(16).toUpperCase());
+  const raw = '<span style="color:var(--sub2);font-size:10px;font-family:var(--f-mono)">(0x' + val.toString(16) + ')</span>';
+  return (labels.length ? escapeHtml(labels.join(' · ')) + ' ' : '') + raw;
+}
+
+function renderPeerDetail(i) {
+  const p = _peerCache[i];
+  if (!p) return;
+  const detailEl = document.getElementById('peer-detail-inline');
+  if (!detailEl) return;
+  detailEl.style.display = '';
+  document.querySelectorAll('#peers-table tbody tr.peer-active').forEach(r => r.classList.remove('peer-active'));
+  const row = document.querySelector('#peers-table tbody tr[data-peer="' + i + '"]');
+  if (row) row.classList.add('peer-active');
+
+  const connTime = p.conntime ? new Date(p.conntime * 1000).toLocaleString() : '—';
+  const lastSend = p.lastsend ? new Date(p.lastsend * 1000).toLocaleTimeString() : '—';
+  const lastRecv = p.lastrecv ? new Date(p.lastrecv * 1000).toLocaleTimeString() : '—';
+  const syncedH  = p.synced_headers != null ? p.synced_headers : '—';
+  const syncedB  = p.synced_blocks  != null ? p.synced_blocks  : '—';
+  const subver   = p.subver || '—';
+  const banscore = p.banscore != null ? p.banscore : '—';
+  const minping  = p.minping  != null ? Math.round(p.minping * 1000) + ' ms' : '—';
+  const ping     = p.pingtime != null ? Math.round(p.pingtime * 1000) + ' ms' : '—';
+
+  detailEl.innerHTML =
+    '<div style="font-size:11px;color:var(--sub);margin-bottom:8px">peer · <span class="mono">' + escapeHtml(p.addr) + '</span></div>'
+    + kvHtml('subversion',     escapeHtml(subver))
+    + kvHtml('services',       fmtServices(p.services || '0'))
+    + kvHtml('direction',      p.inbound ? '<span style="color:var(--sub2)">inbound</span>' : '<span style="color:var(--green)">outbound</span>')
+    + kvHtml('connected since', connTime)
+    + kvHtml('last send',      lastSend)
+    + kvHtml('last recv',      lastRecv)
+    + kvHtml('ping (current)', ping)
+    + kvHtml('ping (min)',     minping)
+    + kvHtml('ban score',      String(banscore))
+    + kvHtml('synced headers', String(syncedH))
+    + kvHtml('synced blocks',  String(syncedB))
+    + kvHtml('↑ sent',        fmtSize(p.bytessent || 0))
+    + kvHtml('↓ recv',        fmtSize(p.bytesrecv || 0));
+}
+
+function showPeerDetail(i) {
+  if (_activePeerIdx === i) {
+    _activePeerIdx = null;
+    const detailEl = document.getElementById('peer-detail-inline');
+    if (detailEl) detailEl.style.display = 'none';
+    document.querySelectorAll('#peers-table tbody tr.peer-active').forEach(r => r.classList.remove('peer-active'));
+    return;
+  }
+  _activePeerIdx = i;
+  renderPeerDetail(i);
+}
+
+async function loadPeers() {
+  const el = document.getElementById('peers-list');
+  if (!el) return;
+  if (!S.connected) { el.innerHTML = '<div class="hist-empty">not connected</div>'; return; }
+  el.innerHTML = '<div class="hist-empty">loading…</div>';
+  try {
+    const peers = await rpc('getpeerinfo', [], null);
+    if (!peers || peers.length === 0) {
+      el.innerHTML = '<div class="hist-empty">no peers connected</div>';
+    } else {
+      Object.keys(_peerCache).forEach(k => delete _peerCache[k]); // clear stale entries
+      peers.forEach((p, i) => { _peerCache[i] = p; });
+      const inbound  = peers.filter(p => p.inbound).length;
+      const outbound = peers.length - inbound;
+
+      const rows = peers.map((p, i) => {
+        const ping = p.pingtime != null ? Math.round(p.pingtime * 1000) + ' ms' : '—';
+        const sent = fmtSize(p.bytessent || 0);
+        const recv = fmtSize(p.bytesrecv || 0);
+        const dir  = p.inbound
+          ? '<span style="color:var(--sub2)">in</span>'
+          : '<span style="color:var(--green)">out</span>';
+        return '<tr data-peer="' + i + '" style="cursor:pointer" onclick="showPeerDetail(' + i + ')">'
+          + '<td style="color:var(--sub2)">' + i + '</td>'
+          + '<td style="font-family:var(--f-mono)">' + escapeHtml(p.addr) + '</td>'
+          + '<td>' + escapeHtml(p.version || '—') + '</td>'
+          + '<td class="right">' + ping + '</td>'
+          + '<td class="right" style="color:var(--sub2)">' + sent + '</td>'
+          + '<td class="right" style="color:var(--sub2)">' + recv + '</td>'
+          + '<td>' + dir + '</td>'
+          + '</tr>';
+      }).join('');
+
+      el.innerHTML =
+        '<div style="font-size:11px;color:var(--sub);margin-bottom:8px">'
+        + peers.length + ' peers · '
+        + '<span style="color:var(--green)">' + outbound + ' out</span> · '
+        + inbound + ' in'
+        + '</div>'
+        + '<table class="io-table" id="peers-table">'
+        + '<thead><tr>'
+        + '<th>#</th><th>address</th><th>ver</th>'
+        + '<th class="right">ping</th>'
+        + '<th class="right">↑ sent</th>'
+        + '<th class="right">↓ recv</th>'
+        + '<th>dir</th>'
+        + '</tr></thead>'
+        + '<tbody>' + rows + '</tbody>'
+        + '</table>'
+        + '<div id="peer-detail-inline" class="peer-detail" style="display:none"></div>';
+    }
+  } catch(e) { el.innerHTML = box('err', e.message); }
+  loadManagedNodes();
+  loadBannedNodes();
+  if (_activePeerIdx !== null) renderPeerDetail(_activePeerIdx);
+}
+
+async function refreshPeersSilent() {
+  if (!S.connected) return;
+  try {
+    const peers = await rpc('getpeerinfo', [], null);
+    if (!peers) return;
+    const tbody = document.querySelector('#peers-table tbody');
+    if (!tbody) { loadPeers(); return; } // table not yet rendered — fall back to full load
+    if (peers.length !== tbody.querySelectorAll('tr').length) { loadPeers(); return; } // count changed
+    // Update summary line
+    const inbound  = peers.filter(p => p.inbound).length;
+    const outbound = peers.length - inbound;
+    const summary  = document.querySelector('#peers-list > div:first-child');
+    if (summary) summary.innerHTML =
+      peers.length + ' peers · '
+      + '<span style="color:var(--green)">' + outbound + ' out</span> · '
+      + inbound + ' in';
+    // Update only the cells that change (ping / sent / recv) — no DOM rebuild
+    peers.forEach((p, i) => {
+      _peerCache[i] = p;
+      const row = tbody.querySelector('tr[data-peer="' + i + '"]');
+      if (!row) return;
+      const cells = row.querySelectorAll('td');
+      if (cells[3]) cells[3].textContent = p.pingtime != null ? Math.round(p.pingtime * 1000) + ' ms' : '—';
+      if (cells[4]) cells[4].textContent = fmtSize(p.bytessent || 0);
+      if (cells[5]) cells[5].textContent = fmtSize(p.bytesrecv || 0);
+    });
+    // Re-render open peer detail if any
+    if (_activePeerIdx !== null) renderPeerDetail(_activePeerIdx);
+  } catch(e) {}
+}
+
+async function loadManagedNodes() {
+  const el = document.getElementById('peers-managed');
+  if (!el) return;
+  try {
+    const nodes = await rpc('getaddednodeinfo', [], null);
+    let body = '';
+    if (!nodes || nodes.length === 0) {
+      body = '<div class="hist-empty" style="margin-bottom:8px">no manually added nodes</div>';
+    } else {
+      const trows = nodes.map(n => {
+        const raw  = n.addednode || '';
+        const disp = escapeHtml(raw);
+        const safe = raw.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        const conn = n.connected
+          ? '<span style="color:var(--green)">connected</span>'
+          : '<span style="color:var(--sub2)">not connected</span>';
+        return '<tr>'
+          + '<td style="font-family:var(--f-mono)">' + disp + '</td>'
+          + '<td>' + conn + '</td>'
+          + '<td><button class="btn sm" onclick="removeManagedNode(\'' + safe + '\')">remove</button></td>'
+          + '</tr>';
+      }).join('');
+      body = '<table class="io-table"><thead><tr><th>address</th><th>status</th><th></th></tr></thead><tbody>'
+        + trows + '</tbody></table>';
+    }
+    el.innerHTML =
+      '<div class="peer-section">'
+      + '<div class="panel-sub">Managed nodes</div>'
+      + body
+      + '<div style="display:flex;gap:8px;align-items:center">'
+      + '<input id="addnode-input" type="text" placeholder="ip:port or hostname:port" class="peer-input"'
+      + ' onkeydown="if(event.key===\'Enter\') addManagedNode()">'
+      + '<button class="btn sm" onclick="addManagedNode()">add node</button>'
+      + '</div>'
+      + '<div id="addnode-msg" style="font-size:10px;margin-top:4px;font-family:var(--f-mono)"></div>'
+      + '</div>';
+  } catch(e) {
+    el.innerHTML = '<div style="font-size:11px;color:var(--red);margin-top:8px">' + e.message + '</div>';
+  }
+}
+
+async function addManagedNode() {
+  const input = document.getElementById('addnode-input');
+  const msg   = document.getElementById('addnode-msg');
+  const addr  = (input ? input.value : '').trim();
+  if (!addr) { if (msg) msg.innerHTML = '<span style="color:var(--red)">enter an address</span>'; return; }
+  try {
+    await rpc('addnode', [addr, 'add'], null);
+    if (input) input.value = '';
+    if (msg) flashMsg('addnode-msg', '<span style="color:var(--green)">added: ' + escapeHtml(addr) + '</span>');
+    setTimeout(loadManagedNodes, 800);
+  } catch(e) {
+    if (msg) msg.innerHTML = '<span style="color:var(--red)">' + e.message + '</span>';
+  }
+}
+
+async function removeManagedNode(addr) {
+  try {
+    await rpc('addnode', [addr, 'remove'], null);
+    loadManagedNodes();
+  } catch(e) {
+    const el = document.getElementById('peers-managed');
+    if (el) el.insertAdjacentHTML('beforeend', '<div style="color:var(--red);font-size:11px;margin-top:4px">' + e.message + '</div>');
+  }
+}
+
+async function loadBannedNodes() {
+  const el = document.getElementById('peers-banned');
+  if (!el) return;
+  try {
+    const banned = await rpc('listbanned', [], null);
+    let body = '';
+    if (!banned || banned.length === 0) {
+      body = '<div class="hist-empty" style="margin-bottom:8px">no banned nodes</div>';
+    } else {
+      const trows = banned.map(b => {
+        const raw  = b.address || '';
+        const disp = escapeHtml(raw);
+        const safe = raw.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        const untilStr = b.banned_until ? new Date(b.banned_until * 1000).toLocaleString() : '—';
+        return '<tr>'
+          + '<td style="font-family:var(--f-mono)">' + disp + '</td>'
+          + '<td style="font-size:11px">' + untilStr + '</td>'
+          + '<td><button class="btn sm" onclick="unbanPeer(\'' + safe + '\')">unban</button></td>'
+          + '</tr>';
+      }).join('');
+      body = '<table class="io-table"><thead><tr><th>address</th><th>banned until</th><th></th></tr></thead><tbody>'
+        + trows + '</tbody></table>';
+    }
+    el.innerHTML =
+      '<div class="peer-section">'
+      + '<div class="panel-sub">Banned nodes</div>'
+      + body
+      + '<div style="display:flex;gap:8px;align-items:center">'
+      + '<input id="ban-input" type="text" placeholder="ip or ip/subnet" class="peer-input"'
+      + ' onkeydown="if(event.key===\'Enter\') banPeer()">'
+      + '<button class="btn sm" onclick="banPeer()">ban</button>'
+      + '</div>'
+      + '<div id="ban-msg" style="font-size:10px;margin-top:4px;font-family:var(--f-mono)"></div>'
+      + '</div>';
+  } catch(e) {
+    el.innerHTML = '<div style="font-size:11px;color:var(--red);margin-top:8px">' + e.message + '</div>';
+  }
+}
+
+async function banPeer() {
+  const input = document.getElementById('ban-input');
+  const msg   = document.getElementById('ban-msg');
+  const addr  = (input ? input.value : '').trim();
+  if (!addr) { if (msg) msg.innerHTML = '<span style="color:var(--red)">enter an IP or subnet</span>'; return; }
+  try {
+    const banHost = addr.split('/')[0];
+    try {
+      const added = await rpc('getaddednodeinfo', [], null);
+      for (const n of (added || [])) {
+        if (n.addednode && n.addednode.startsWith(banHost))
+          await rpc('addnode', [n.addednode, 'remove'], null);
+      }
+    } catch(_) {}
+    await rpc('setban', [addr, 'add'], null);
+    try {
+      const peers = await rpc('getpeerinfo', [], null);
+      for (const p of (peers || [])) {
+        if (p.addr && p.addr.startsWith(banHost))
+          await rpc('disconnectnode', [p.addr], null);
+      }
+    } catch(_) {}
+    if (input) input.value = '';
+    if (msg) flashMsg('ban-msg', '<span style="color:var(--green)">banned &amp; disconnected: ' + escapeHtml(addr) + '</span>');
+    _activePeerIdx = null;
+    setTimeout(loadPeers, 800);
+  } catch(e) {
+    if (msg) msg.innerHTML = '<span style="color:var(--red)">' + e.message + '</span>';
+  }
+}
+
+async function unbanPeer(addr) {
+  try {
+    await rpc('setban', [addr, 'remove'], null);
+    loadBannedNodes();
+  } catch(e) {
+    const el = document.getElementById('peers-banned');
+    if (el) el.insertAdjacentHTML('beforeend', '<div style="color:var(--red);font-size:11px;margin-top:4px">' + e.message + '</div>');
+  }
+}
+
+window.addEventListener('load', autoConnect);
+setInterval(async () => {
+  if (!S.connected || document.hidden) return;
+  const prevHeight = S.height;
+  await updateInfoStrip();
+  if (CFG.wallet != null && S.height !== prevHeight) refreshBalance();
+}, 15000);
+
+setInterval(() => {
+  if (S.connected && !document.hidden && CFG.wallet != null) refreshPending();
+}, 5000);
+
+setInterval(() => {
+  if (!S.connected || document.hidden) return;
+  const activePanel = document.querySelector('.panel.active');
+  if (activePanel && activePanel.id === 'panel-peers') refreshPeersSilent();
+}, 30000);
+
+// Keyboard activation for non-native clickable elements (role="button")
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const el = e.target;
+  if (el && el.getAttribute && el.getAttribute('role') === 'button') {
+    e.preventDefault();
+    el.click();
+  }
+});
+</script>
+</body>
+</html>

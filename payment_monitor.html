@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memcoin Payment Monitor</title>
+<style>
+:root {
+  --bg:       #ffffff;
+  --bg2:      #ffffff;
+  --bg3:      #f4f4f4;
+  --border:   #000000;
+  --border2:  #eeeeee;
+  --accent:   #000000;
+  --acc-dim:  #333333;
+  --text:     #000000;
+  --grey:     #888888;
+  --dim:      #aaaaaa;
+  --red:      #cc0000;
+  --amber:    #cc7700;
+  --blue:     #0055cc;
+  --purple:   #aa00aa;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  padding: 24px 16px 64px;
+}
+
+#app { width: 100%; max-width: 720px; }
+
+#top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+#info-cards { display: flex; gap: 6px; align-items: center; }
+.icard {
+  font-size: 11px;
+  padding: 3px 8px;
+  border: 1px solid var(--border2);
+  background: var(--bg2);
+  white-space: nowrap;
+}
+.icard .ik { color: var(--dim); margin-right: 4px; }
+.icard .iv { color: var(--grey); }
+.icard.live .iv { color: var(--accent); }
+#theme-switcher { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.theme-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  cursor: pointer;
+  opacity: 0.35;
+  transition: opacity 0.15s;
+}
+.theme-dot:hover { opacity: 0.21; }
+.theme-dot.active { opacity: 0.21; }
+
+#monitor-bar {
+  border: 1px solid var(--border);
+  padding: 12px;
+  margin-bottom: 14px;
+  background: var(--bg2);
+}
+#monitor-status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 12px;
+}
+.pulse {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: middle;
+  background: var(--dim);
+}
+.pulse.active { background: var(--accent); animation: blink 7s ease-in-out infinite; }
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.1; } }
+
+.field { margin-bottom: 12px; }
+.field label { display: block; font-size: 11px; color: var(--grey); margin-bottom: 3px; }
+.field input {
+  width: 100%;
+  font-family: Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  padding: 6px 8px;
+  background: var(--bg);
+  color: var(--text);
+  outline: none;
+  caret-color: var(--accent);
+}
+.field input:focus { background: var(--bg3); border-color: var(--acc-dim); }
+
+.btn {
+  font-family: Consolas, "Ubuntu Mono", "DejaVu Sans Mono", monospace;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  color: var(--text);
+  padding: 7px 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn:hover { background: var(--bg3); border-color: var(--acc-dim); }
+.btn.primary { border-color: var(--acc-dim); color: var(--accent); }
+.btn.primary:hover { background: var(--accent); color: var(--bg); }
+.btn.danger { border-color: var(--border); color: var(--grey); }
+.btn.danger:hover { border-color: var(--red); color: var(--red); }
+.btn.sm { font-size: 11px; padding: 3px 10px; }
+.btn-row { display: flex; gap: 8px; }
+
+#stats-strip {
+  display: flex;
+  border: 1px solid var(--border2);
+  margin-bottom: 14px;
+  font-size: 11px;
+  background: var(--bg2);
+}
+.stat-cell { flex: 1; padding: 5px 10px; border-right: 1px solid var(--border2); text-align: center; }
+.stat-cell:last-child { border-right: none; }
+.stat-cell .sk { font-size: 10px; color: var(--dim); }
+.stat-cell .sv { font-size: 13px; color: var(--text); }
+
+#tx-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 11px;
+  color: var(--grey);
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+.tx-card {
+  border: 1px solid var(--border2);
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  background: var(--bg2);
+  animation: fadein 0.3s ease;
+}
+.tx-card.new { border-color: var(--accent); }
+@keyframes fadein { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.tx-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 4px;
+}
+.tx-total { font-size: 15px; }
+.tx-time { font-size: 11px; color: var(--grey); }
+.tx-txid { font-size: 11px; color: var(--dim); word-break: break-all; margin-bottom: 6px; }
+.tx-cltv { font-size: 11px; color: var(--grey); margin-bottom: 4px; }
+.tx-conf { font-size: 10px; color: var(--dim); margin-top: 4px; }
+.tx-conf.confirmed { color: var(--accent); }
+
+.empty { font-size: 12px; color: var(--dim); padding: 20px 0; text-align: center; }
+.box { border: 1px solid var(--border2); padding: 8px 10px; font-size: 12px; margin-top: 8px; }
+.box.err  { border-color: var(--red);    color: var(--red); }
+.box.info { border-color: var(--blue);   color: var(--blue); }
+</style>
+</head>
+<body>
+<div id="app">
+
+<div id="top-bar">
+  <div id="info-cards">
+    <div class="icard" id="icard-block"><span class="ik">block</span><span class="iv" id="ic-block">—</span></div>
+    <div class="icard" id="icard-peers"><span class="ik">peers</span><span class="iv" id="ic-peers">—</span></div>
+  </div>
+  <div id="theme-switcher"></div>
+</div>
+
+<div id="monitor-bar">
+  <div id="monitor-status-row">
+    <div>
+      <span class="pulse" id="pulse"></span>
+      <span id="monitor-status">not monitoring</span>
+    </div>
+    <div class="btn-row">
+      <button class="btn sm primary" id="btn-start" onclick="startMonitor()">start</button>
+      <button class="btn sm danger"  id="btn-stop"  onclick="stopMonitor()" style="display:none">stop</button>
+      <button class="btn sm"         onclick="clearList()">clear</button>
+    </div>
+  </div>
+  <div class="field" style="margin-bottom:0">
+    <label>monitor address</label>
+    <input type="text" id="monitor-addr" placeholder="M… (leave empty to watch all TX1)">
+    <div id="monitor-addr-err" style="margin-top:4px"></div>
+  </div>
+  <div id="start-err"></div>
+</div>
+
+<div id="stats-strip">
+  <div class="stat-cell"><div class="sk">seen</div>      <div class="sv" id="st-seen">0</div></div>
+  <div class="stat-cell"><div class="sk">total bit</div> <div class="sv" id="st-total">0</div></div>
+  <div class="stat-cell"><div class="sk">pending</div>    <div class="sv" id="st-pending">0</div></div>
+</div>
+
+<div id="tx-list-header">
+  <span>incoming TX1 payments</span>
+  <span id="list-count"></span>
+</div>
+<div id="tx-list">
+  <div class="empty" id="empty-msg">start monitoring to watch for incoming TX1 payments</div>
+</div>
+
+</div>
+<script>
+// NOTE: placeholder RPC credentials for a local node. Change rpcuser/rpcpassword
+// in your node config (and below) — do not reuse these defaults anywhere
+// other than a trusted local machine.
+const CFG = { endpoint:'http://localhost:9332', user:'memcoin', pass:'memcoinrpc' };
+const S = {
+  connected: false,
+  height: 0,
+  monitoring: false,
+  timer: null,
+  seenTxids: new Set(),
+  txCards: [],
+  totalBit: 0,
+};
+
+const THEMES = [
+    { name:'Original',
+    bg:'#ffffff', bg2:'#ffffff', bg3:'#f4f4f4',
+    border:'#000000', border2:'#eeeeee',
+    accent:'#000000', accdim:'#333333',
+    text:'#000000', grey:'#888888', dim:'#aaaaaa',
+    red:'#cc0000', amber:'#cc7700', blue:'#0055cc', purple:'#aa00aa',
+    dot:'#333333' },
+  { name:'Green',
+    bg:'#0a0a0a', bg2:'#0f0f0f', bg3:'#141414',
+    border:'#1f3320', border2:'#2a2a2a',
+    accent:'#39d353', accdim:'#1e6b24',
+    text:'#d0d0d0', grey:'#777', dim:'#444',
+    red:'#e05252', amber:'#d4a017', blue:'#5b9bd5', purple:'#b07dff',
+    dot:'#39d353' },
+  { name:'Amber',
+    bg:'#0d0800', bg2:'#120b00', bg3:'#180f00',
+    border:'#3a2200', border2:'#2a1800',
+    accent:'#ffb000', accdim:'#7a5200',
+    text:'#e8a040', grey:'#996020', dim:'#4a2e08',
+    red:'#ff5555', amber:'#ffb000', blue:'#88aacc', purple:'#cc88ff',
+    dot:'#ffb000' },
+  { name:'Solarized',
+    bg:'#002b36', bg2:'#01333f', bg3:'#073642',
+    border:'#0d3f4a', border2:'#094050',
+    accent:'#2aa198', accdim:'#1a6560',
+    text:'#839496', grey:'#586e75', dim:'#3a5560',
+    red:'#dc322f', amber:'#b58900', blue:'#268bd2', purple:'#6c71c4',
+    dot:'#2aa198' },
+  { name:'Dracula',
+    bg:'#1a1b26', bg2:'#1e1f2e', bg3:'#282a36',
+    border:'#363849', border2:'#44475a',
+    accent:'#50fa7b', accdim:'#2d8c4a',
+    text:'#f8f8f2', grey:'#6272a4', dim:'#44475a',
+    red:'#ff5555', amber:'#ffb86c', blue:'#8be9fd', purple:'#bd93f9',
+    dot:'#50fa7b' },
+  { name:'Nord',
+    bg:'#242831', bg2:'#2e3440', bg3:'#3b4252',
+    border:'#3d4a5c', border2:'#4c566a',
+    accent:'#88c0d0', accdim:'#4e7a8a',
+    text:'#eceff4', grey:'#8090a8', dim:'#4c566a',
+    red:'#bf616a', amber:'#ebcb8b', blue:'#81a1c1', purple:'#b48ead',
+    dot:'#88c0d0' },
+  { name:'Gruvbox',
+    bg:'#1d2021', bg2:'#282828', bg3:'#3c3836',
+    border:'#3c3836', border2:'#504945',
+    accent:'#b8bb26', accdim:'#79740e',
+    text:'#ebdbb2', grey:'#928374', dim:'#504945',
+    red:'#fb4934', amber:'#fabd2f', blue:'#83a598', purple:'#d3869b',
+    dot:'#b8bb26' },
+  { name:'White',
+    bg:'#ffffff', bg2:'#f4f4f4', bg3:'#e8e8e8',
+    border:'#cccccc', border2:'#dddddd',
+    accent:'#006600', accdim:'#338833',
+    text:'#111111', grey:'#555555', dim:'#aaaaaa',
+    red:'#cc0000', amber:'#885500', blue:'#0055aa', purple:'#660099',
+    dot:'#555555' },
+];
+
+function applyTheme(t) {
+  const r = document.documentElement.style;
+  r.setProperty('--bg',      t.bg);
+  r.setProperty('--bg2',     t.bg2);
+  r.setProperty('--bg3',     t.bg3);
+  r.setProperty('--border',  t.border);
+  r.setProperty('--border2', t.border2);
+  r.setProperty('--accent',  t.accent);
+  r.setProperty('--acc-dim', t.accdim);
+  r.setProperty('--text',    t.text);
+  r.setProperty('--grey',    t.grey);
+  r.setProperty('--dim',     t.dim);
+  r.setProperty('--red',     t.red);
+  r.setProperty('--amber',   t.amber);
+  r.setProperty('--blue',    t.blue);
+  r.setProperty('--purple',  t.purple);
+  document.querySelectorAll('.theme-dot').forEach((d,i) => d.classList.toggle('active', THEMES[i] === t));
+  try { localStorage.setItem('memcoin-monitor-theme', t.name); } catch(e){}
+}
+
+function buildThemeBar() {
+  const bar = document.getElementById('theme-switcher');
+  THEMES.forEach((t, i) => {
+    const d = document.createElement('span');
+    d.className = 'theme-dot';
+    d.title = t.name;
+    d.style.background = t.dot;
+    d.onclick = () => applyTheme(t);
+    bar.appendChild(d);
+  });
+  let saved; try { saved = localStorage.getItem('memcoin-monitor-theme'); } catch(e){}
+  applyTheme(THEMES.find(t => t.name === saved) || THEMES[0]);
+}
+
+async function rpc(method, params = []) {
+  const res = await fetch(CFG.endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Basic ' + btoa(CFG.user + ':' + CFG.pass)
+    },
+    body: JSON.stringify({ jsonrpc: '1.0', id: 1, method, params })
+  });
+  if (!res.ok) {
+    const t = await res.text().catch(() => res.statusText);
+    throw new Error(`HTTP ${res.status}: ${t.slice(0, 100)}`);
+  }
+  const d = await res.json();
+  if (d.error) throw new Error(d.error.message || JSON.stringify(d.error));
+  return d.result;
+}
+
+const unhex = s => { const b=new Uint8Array(s.length/2); for(let i=0;i<s.length;i+=2) b[i/2]=parseInt(s.slice(i,i+2),16); return b; };
+
+const B58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+function b58decode(s) {
+  let n = 0n;
+  for (const c of s) { const i=B58.indexOf(c); if(i<0) throw new Error('bad b58'); n=n*58n+BigInt(i); }
+  const bytes=[]; while(n>0n){bytes.unshift(Number(n&0xffn));n>>=8n;}
+  for (const c of s) { if(c!=='1') break; bytes.unshift(0); }
+  return new Uint8Array(bytes);
+}
+async function sha256(bytes) {
+  const h = await crypto.subtle.digest('SHA-256', bytes);
+  return new Uint8Array(h);
+}
+async function b58decodeCheck(s) {
+  const b = b58decode(s);
+  if (b.length !== 25) throw new Error('invalid address length');
+  if (b[0] !== 0x32) throw new Error('invalid address version');
+  const payload  = b.slice(0, 21);
+  const checksum = b.slice(21, 25);
+  const expected = (await sha256(await sha256(payload))).slice(0, 4);
+  for (let i = 0; i < 4; i++)
+    if (checksum[i] !== expected[i]) throw new Error('invalid address checksum');
+  return b;
+}
+async function addrToPkhHex(addr) {
+  const b = await b58decodeCheck(addr);
+  return Array.from(b.slice(1,21)).map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+
+function isCLTVScript(scriptHex) {
+  const bytes = unhex(scriptHex);
+  if (bytes.length < 29) return false;
+  const ltLen = bytes[0];
+  if (ltLen < 1 || ltLen > 5) return false;
+  if (bytes.length !== 1 + ltLen + 27) return false;
+  const o = 1 + ltLen;
+  return bytes[o]===0xb1 && bytes[o+1]===0x75 && bytes[o+2]===0x76 &&
+         bytes[o+3]===0xa9 && bytes[o+4]===0x14 &&
+         bytes[o+25]===0x88 && bytes[o+26]===0xac;
+}
+function parseCLTVHeight(scriptHex) {
+  const bytes = unhex(scriptHex), ltLen = bytes[0], ltBytes = bytes.slice(1, 1+ltLen);
+  let val = 0;
+  for (let i=0; i<ltBytes.length; i++) val |= ltBytes[i] << (8*i);
+  return val;
+}
+function pkhFromCLTVScript(scriptHex) {
+  const bytes = unhex(scriptHex), ltLen = bytes[0], o = 1 + ltLen;
+  return Array.from(bytes.slice(o+5, o+25)).map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+
+function fmtBit(bit) {
+  if (bit === 0) return '0.0 ᴋ';
+  const mem  = Math.floor(bit / 100000000);
+  const mbit = Math.floor((bit % 100000000) / 1000000);
+  const kb   = (bit % 1000000) / 1000;
+  const p = [];
+  if (mem  > 0) p.push(mem  + ' 𝕄');
+  if (mbit > 0) p.push(mbit + ' ᴍ');
+  if (kb > 0 || (mem === 0 && mbit === 0)) p.push(parseFloat(kb.toFixed(3)) + ' ᴋ');
+  return p.join(' ');
+}
+function fmtTime(ts) {
+  return new Date(ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+}
+
+function setEl(id, html) { const e=document.getElementById(id); if(e) e.innerHTML=html; }
+
+async function autoConnect() {
+  try {
+    const [net, chain] = await Promise.all([rpc('getnetworkinfo'), rpc('getblockchaininfo')]);
+    S.height = chain.blocks; S.connected = true;
+    setEl('ic-block',   chain.blocks);
+    setEl('ic-peers',   net.connections);
+    ['icard-block','icard-peers'].forEach(id => {
+      const el=document.getElementById(id); if(el) el.classList.add('live');
+    });
+  } catch(e) {}
+}
+
+function startMonitor() {
+  if (!S.connected) {
+    setEl('start-err', '<div class="box info" style="margin-top:8px">not connected — node not reachable</div>');
+    return;
+  }
+  setEl('start-err', '');
+  S.monitoring = true;
+  document.getElementById('btn-start').style.display = 'none';
+  document.getElementById('btn-stop').style.display  = 'inline';
+  document.getElementById('pulse').classList.add('active');
+  setEl('monitor-status', 'monitoring…');
+  setEl('empty-msg', 'waiting for TX1 payments…');
+  poll();
+  S.timer = setInterval(poll, 5000);
+}
+
+function stopMonitor() {
+  S.monitoring = false;
+  clearInterval(S.timer); S.timer = null;
+  document.getElementById('btn-start').style.display = 'inline';
+  document.getElementById('btn-stop').style.display  = 'none';
+  document.getElementById('pulse').classList.remove('active');
+  setEl('monitor-status', 'stopped');
+}
+
+function clearList() {
+  S.seenTxids.clear();
+  S.txCards = [];
+  S.totalBit = 0;
+  renderList();
+  setEl('st-seen',  '0');
+  setEl('st-total', '0');
+}
+
+let _addrCache = { addr: '', pkh: null };
+
+async function poll() {
+  if (!S.connected) return;
+  try {
+    const [rawMp, net, chain] = await Promise.all([
+      rpc('getrawmempool'),
+      rpc('getnetworkinfo'),
+      rpc('getblockchaininfo')
+    ]);
+    S.height = chain.blocks;
+    setEl('ic-block',   chain.blocks);
+    setEl('ic-peers',   net.connections);
+
+    const filterAddr = document.getElementById('monitor-addr').value.trim();
+    let filterPkh = null;
+    if (filterAddr) {
+      if (filterAddr !== _addrCache.addr) {
+        try {
+          _addrCache = { addr: filterAddr, pkh: await addrToPkhHex(filterAddr) };
+          setEl('monitor-addr-err', '');
+        } catch(e) {
+          _addrCache = { addr: '', pkh: null };
+          setEl('monitor-addr-err',
+            `<div class="box err" style="margin-top:4px">invalid address: ${e.message} — showing all TX1</div>`);
+        }
+      }
+      filterPkh = _addrCache.pkh;
+    } else {
+      if (_addrCache.addr) _addrCache = { addr: '', pkh: null };
+      setEl('monitor-addr-err', '');
+    }
+
+    const newTxids = rawMp.filter(txid => !S.seenTxids.has(txid));
+    for (const txid of newTxids) {
+      S.seenTxids.add(txid);
+      try {
+        const raw = await rpc('getrawtransaction', [txid, 1]);
+        await processTx(txid, raw, filterPkh);
+      } catch(e) {}
+    }
+
+    let updated = false;
+    for (const card of S.txCards) {
+      if (!card.confirmed && !rawMp.includes(card.txid)) {
+        try {
+          const txData = await rpc('getrawtransaction', [card.txid, 1]);
+          if ((txData.confirmations || 0) > 0) {
+            card.confirmed = true;
+            card.confirmHeight = chain.blocks;
+            updated = true;
+          }
+        } catch(e) {}
+      }
+    }
+    if (updated) renderList();
+
+  } catch(e) {}
+}
+
+async function processTx(txid, raw, filterPkh) {
+  const vout = raw.vout || [];
+  const out0spk = vout[0]?.scriptPubKey?.hex || '';
+  if (!isCLTVScript(out0spk)) return;
+  const recipientPkh = pkhFromCLTVScript(out0spk);
+  if (filterPkh && recipientPkh !== filterPkh) return;
+
+  const cltvH    = parseCLTVHeight(out0spk);
+  const totalBit = Math.round(vout[0].value * 1e8);
+
+  let senderAddr = '—';
+  try {
+    const vin0 = raw.vin?.[0];
+    if (vin0?.txid) {
+      const prevTx = await rpc('getrawtransaction', [vin0.txid, 1]);
+      const prevOut = prevTx.vout?.[vin0.vout];
+      senderAddr = prevOut?.scriptPubKey?.address
+                || prevOut?.scriptPubKey?.addresses?.[0]
+                || '—';
+    }
+  } catch(e) {}
+
+  S.txCards.unshift({ txid, totalBit, cltvH, recipientPkh, senderAddr, firstSeen: Date.now(), confirmed: false, confirmHeight: null });
+  S.totalBit += totalBit;
+  setEl('st-seen',  S.txCards.length);
+  setEl('st-total', fmtBit(S.totalBit));
+  renderList();
+}
+
+function renderList() {
+  const container = document.getElementById('tx-list');
+  const pending = S.txCards.filter(c => !c.confirmed).length;
+  setEl('st-pending', pending);
+  setEl('list-count', S.txCards.length > 0 ? S.txCards.length + ' tx' : '');
+  if (S.txCards.length === 0) {
+    container.innerHTML = `<div class="empty" id="empty-msg">${
+      S.monitoring ? 'waiting for TX1 payments…' : 'start monitoring to watch for incoming TX1 payments'
+    }</div>`;
+    return;
+  }
+  container.innerHTML = S.txCards.map(card => {
+    const unlockBlock = card.cltvH + 1;
+    const confLine = !card.confirmed
+      ? `<div class="tx-conf">unconfirmed</div>`
+      : unlockBlock <= S.height
+        ? `<div class="tx-conf confirmed">confirmed at block ${card.confirmHeight} · unlocked (spendable)</div>`
+        : `<div class="tx-conf confirmed">confirmed at block ${card.confirmHeight} · CLTV unlocks at block ${unlockBlock}</div>`;
+    return `<div class="tx-card${card.confirmed ? '' : ' new'}">
+      <div class="tx-card-top">
+        <span class="tx-total">${fmtBit(card.totalBit)}</span>
+        <span class="tx-time">${fmtTime(card.firstSeen)}</span>
+      </div>
+      <div class="tx-txid">${card.txid}</div>
+      <div class="tx-txid">sender: ${card.senderAddr}</div>
+      ${confLine}
+    </div>`;
+  }).join('');
+}
+
+window.addEventListener('load', () => { buildThemeBar(); autoConnect(); });
+</script>
+</body>
+</html>

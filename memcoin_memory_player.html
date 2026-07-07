@@ -1,0 +1,2684 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memcoin Memory Player</title>
+<style>
+
+  :root[data-theme="light"] {
+    --bg:           #ebebea;
+    --panel:        #f4f4f3;
+    --border:       #d0d0ce;
+    --border-light: #dadad8;
+    --ink:          #111112;
+    --ink-mid:      #484850;
+    --ink-dim:      #909098;
+    --ink-faint:    #c0c0c8;
+    --sans: "Century Gothic", "Avant Garde", Futura, "Trebuchet MS", Cantarell, sans-serif;
+    --mono: "IBM Plex Mono", "SF Mono", Menlo, Consolas, monospace;
+    --col-primary:   #111112;
+    --col-secondary: #404050;
+    --col-dim:       #808090;
+    --col-accent:    #6a5acd;
+    --col-rest:      #c8c8d0;
+    --roll-bg:       #f8f8f7;
+  }
+
+  :root[data-theme="dark"] {
+    --bg:           #111009;
+    --panel:        #17150e;
+    --border:       #2a2518;
+    --border-light: #1e1c12;
+    --ink:          #f0d898;
+    --ink-mid:      #a88a50;
+    --ink-dim:      #5a4a28;
+    --ink-faint:    #302a18;
+    --sans: "Century Gothic", "Avant Garde", Futura, "Trebuchet MS", Cantarell, sans-serif;
+    --mono: "IBM Plex Mono", "SF Mono", Menlo, Consolas, monospace;
+    --col-primary:   #f4c84a;
+    --col-secondary: #c8902a;
+    --col-dim:       #785820;
+    --col-accent:    #f4c84a;
+    --col-rest:      #2a2518;
+    --roll-bg:       #15130c;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    min-height: 100vh;
+    padding: 36px 28px 80px;
+    transition: background 0.3s, color 0.3s;
+  }
+
+  .wrap { max-width: 960px; margin: 0 auto; }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 20px;
+    margin-bottom: 40px;
+  }
+
+  .logo { display: flex; align-items: center; }
+  .logo-m   { font-size: 18px; font-weight: 400; color: #888480; line-height: 1; }
+  .logo-sep { color: #32302b; font-weight: 200; font-size: 16px; margin: 0 10px; }
+  .logo-sub { font-size: 10px; letter-spacing: 2px; color: #444240; font-weight: 300; }
+  [data-theme="dark"] .logo-m   { color: var(--ink-mid); }
+  [data-theme="dark"] .logo-sep { color: var(--ink-faint); }
+  [data-theme="dark"] .logo-sub { color: var(--ink-dim); }
+
+  #theme-toggle {
+    font-size: 10px; font-weight: 300;
+    letter-spacing: 2px; text-transform: uppercase;
+    color: var(--ink-faint);
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.3s;
+  }
+  #theme-toggle:hover { color: var(--ink-dim); }
+
+  #sound-toggle {
+    font-size: 10px; font-weight: 300;
+    letter-spacing: 2px; text-transform: uppercase;
+    color: var(--ink-faint);
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.3s;
+  }
+  #sound-toggle:hover { color: var(--ink-dim); }
+
+  section { margin-bottom: 44px; }
+
+  .section-label {
+    font-size: 9px; font-weight: 400;
+    color: var(--ink-faint);
+    letter-spacing: 3px; text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  textarea#hex-input {
+    width: 100%;
+    resize: vertical;
+    min-height: 64px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--ink);
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    padding: 12px 14px;
+    line-height: 1.6;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  textarea#hex-input:focus { border-color: var(--ink-dim); }
+
+  .input-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .input-row input[type="text"],
+  .input-row input[type="number"] {
+    flex: 1 1 auto;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--ink);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 9px 12px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .input-row input[type="text"]:focus,
+  .input-row input[type="number"]:focus { border-color: var(--ink-dim); }
+  .input-row input::placeholder { color: var(--ink-faint); }
+
+  .checkbox-label {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 11px; font-weight: 300;
+    color: var(--ink-dim);
+    cursor: pointer;
+    user-select: none;
+  }
+  .checkbox-label input[type="checkbox"] {
+    accent-color: var(--col-primary);
+    cursor: pointer;
+  }
+
+  .btn {
+    font-family: var(--sans);
+    font-size: 10px; font-weight: 400;
+    letter-spacing: 2px; text-transform: uppercase;
+    color: var(--ink);
+    background: transparent;
+    border: 1px solid var(--ink-dim);
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .btn:hover { background: var(--ink); color: var(--bg); }
+  .btn:disabled { opacity: 0.35; cursor: default; }
+  .btn:disabled:hover { background: transparent; color: var(--ink); }
+
+  .btn.primary {
+    background: var(--col-primary);
+    color: var(--bg);
+    border-color: var(--col-primary);
+  }
+  .btn.primary:hover { opacity: 0.85; background: var(--col-primary); color: var(--bg); }
+
+  .chips {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;
+  }
+  .chip {
+    font-size: 10px; font-weight: 300;
+    letter-spacing: 1px;
+    color: var(--ink-dim);
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+    white-space: nowrap;
+  }
+  .chip:hover { border-color: var(--ink-dim); color: var(--ink); }
+
+  .error-msg {
+    margin-top: 12px;
+    font-size: 12px; font-weight: 300;
+    color: var(--col-secondary);
+    display: none;
+  }
+  .error-msg.show { display: block; }
+  .error-msg.notice { color: var(--ink-dim); }
+
+  .mode-row {
+    display: flex; align-items: baseline; gap: 14px;
+    margin-bottom: 18px;
+  }
+  .mode-badge {
+    font-size: 11px; font-weight: 400;
+    letter-spacing: 2px; text-transform: uppercase;
+    padding: 5px 12px;
+    border: 1px solid var(--ink-dim);
+    color: var(--ink);
+  }
+  .mode-badge.music  { border-color: var(--col-accent); color: var(--col-accent); }
+  .mode-detail { font-size: 11px; color: var(--ink-dim); font-weight: 300; }
+
+  /* text/stream view */
+  .stream {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 18px 20px;
+    font-size: 15px;
+    line-height: 2;
+    word-break: break-word;
+  }
+  .stream .empty-hint { color: var(--ink-faint); font-style: italic; font-size: 13px; }
+  .badge {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 2px 6px;
+    margin: 0 1px;
+    border-radius: 2px;
+    border: 1px solid var(--border);
+    color: var(--ink-mid);
+    white-space: nowrap;
+  }
+  .badge.note  { border-color: var(--col-accent); color: var(--col-accent); }
+  .badge.rest  { color: var(--ink-faint); border-style: dashed; }
+  .badge.state { color: var(--ink-dim); font-size: 10px; }
+
+  .roll-wrap {
+    background: var(--roll-bg);
+    border: 1px solid var(--border);
+    margin-top: 18px;
+    overflow-x: auto;
+  }
+  .roll-line {
+    position: relative;
+    height: 132px;
+    border-bottom: 1px solid var(--border-light);
+    min-width: max-content;
+  }
+  .roll-line:last-child { border-bottom: none; }
+  .roll-tile {
+    position: absolute;
+    height: 16px;
+    border-radius: 2px;
+    background: var(--col-dim);
+    color: var(--bg);
+    font-family: var(--mono);
+    font-size: 9px;
+    line-height: 16px;
+    text-align: center;
+    overflow: hidden;
+    white-space: nowrap;
+    transition: background 0.08s, box-shadow 0.08s, transform 0.08s;
+  }
+  .roll-tile.rest {
+    background: transparent;
+    border: 1px dashed var(--col-rest);
+    color: transparent;
+  }
+  .roll-tile.lit {
+    background: var(--col-accent);
+    color: var(--bg);
+    box-shadow: 0 0 0 1px var(--col-accent), 0 0 10px 0 var(--col-accent);
+    transform: translateY(-1px);
+  }
+  .roll-marker {
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 0;
+    border-left: 1px dotted var(--ink-faint);
+  }
+  .roll-marker-label {
+    position: absolute;
+    top: 4px; left: 4px;
+    font-size: 9px; letter-spacing: 1px;
+    color: var(--ink-dim);
+    white-space: nowrap;
+    text-transform: uppercase;
+  }
+  .playhead {
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 1px;
+    background: var(--col-primary);
+    box-shadow: 0 0 8px 0 var(--col-primary);
+    display: none;
+    pointer-events: none;
+  }
+
+  .playback-bar {
+    display: flex; align-items: center; gap: 18px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+  }
+  .playback-bar .btn { padding: 9px 18px; }
+  .playback-bar input[type="text"] {
+    flex: 1 1 200px;
+    min-width: 140px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--ink);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 9px 12px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .playback-bar input[type="text"]:focus { border-color: var(--ink-dim); }
+  .playback-bar input::placeholder { color: var(--ink-faint); }
+  .playback-info {
+    font-size: 10px; font-weight: 300;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--ink-dim);
+  }
+  .playback-info b { color: var(--ink); font-weight: 400; }
+
+  .score-list {
+    margin-top: 18px;
+    font-family: var(--mono);
+    font-size: 11px;
+    line-height: 1.9;
+    color: var(--ink-mid);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+  }
+  .score-list .sl-note  { color: var(--col-accent); }
+  .score-list .sl-rest  { color: var(--ink-faint); }
+  .score-list .sl-state { color: var(--ink-dim); font-size: 10px; }
+  .score-list .sl-break { width: 100%; height: 0; }
+
+  .scan-header {
+    font-size: 9px; font-weight: 400;
+    color: var(--ink-faint);
+    letter-spacing: 3px; text-transform: uppercase;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 64px 1fr 90px 1fr 50px 90px;
+    gap: 12px;
+  }
+  .scan-row {
+    display: grid;
+    grid-template-columns: 64px 1fr 90px 1fr 50px 90px;
+    gap: 12px;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-light);
+    font-size: 12px; font-weight: 300;
+    color: var(--ink-mid);
+  }
+  .scan-row:last-child { border-bottom: none; }
+  .scan-height { font-weight: 400; }
+  .scan-hash   { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-dim); font-family: var(--mono); font-size: 11px; }
+  .scan-preview { font-size: 11px; color: var(--ink-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .scan-score { font-family: var(--mono); font-size: 11px; color: var(--ink-dim); text-align: right; }
+  .scan-header span[title] { cursor: help; border-bottom: 1px dotted var(--ink-faint); }
+  .scan-status {
+    margin-top: 14px;
+    font-size: 11px; font-weight: 300;
+    color: var(--ink-dim);
+  }
+  .scan-status.error { color: var(--col-secondary); }
+
+  .config-note {
+    font-size: 11px; color: var(--ink-faint); font-weight: 300;
+    margin-top: 10px; line-height: 1.7;
+  }
+  .config-note code {
+    font-family: var(--mono); font-size: 10px;
+    background: var(--panel); padding: 1px 5px; border-radius: 2px;
+  }
+
+  @media (max-width: 700px) {
+    .scan-header, .scan-row { grid-template-columns: 50px 1fr 90px; }
+    .scan-header span:nth-child(4), .scan-header span:nth-child(5), .scan-header span:nth-child(6),
+    .scan-row span:nth-child(4), .scan-row span:nth-child(5), .scan-row .scan-load { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+    .roll-tile.lit { transform: none; }
+  }
+
+  .tabs { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+  .tab {
+    font-size: 10px; font-weight: 400;
+    letter-spacing: 2px; text-transform: uppercase;
+    padding: 9px 16px;
+    border: 1px solid var(--border);
+    color: var(--ink-dim);
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+    user-select: none;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab.active { border-color: var(--ink-dim); color: var(--ink); }
+
+  .tabs.sub .tab { font-size: 10px; padding: 8px 14px; font-weight: 300; letter-spacing: 1px; text-transform: none; }
+
+  textarea#enc-text-input {
+    width: 100%;
+    resize: vertical;
+    min-height: 70px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 14px;
+    padding: 12px 14px;
+    line-height: 1.6;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  textarea#enc-text-input:focus { border-color: var(--ink-dim); }
+
+  textarea#score-text-area {
+    width: 100%;
+    resize: vertical;
+    min-height: 64px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--ink);
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    padding: 12px 14px;
+    line-height: 1.6;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  textarea#score-text-area:focus { border-color: var(--ink-dim); }
+  textarea#score-text-area::placeholder { color: var(--ink-faint); }
+
+  #score-export-format {
+    font-family: var(--sans);
+    font-size: 10px; font-weight: 400;
+    letter-spacing: 1px; text-transform: uppercase;
+    color: var(--ink);
+    background: transparent;
+    border: 1px solid var(--ink-dim);
+    padding: 9px 10px;
+    cursor: pointer;
+  }
+
+  .capacity-bar { margin-top: 12px; }
+  .capacity-track {
+    height: 3px;
+    background: var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  .capacity-fill {
+    height: 100%;
+    background: var(--col-accent);
+    transition: width 0.12s, background 0.12s;
+  }
+  .capacity-fill.full { background: var(--col-secondary); }
+  .capacity-label {
+    font-size: 10px; font-weight: 300;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--ink-dim);
+    margin-top: 8px;
+  }
+  .capacity-label.full { color: var(--col-secondary); }
+
+  .encode-output {
+    margin-top: 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 14px 16px;
+  }
+  .encode-output .hexval {
+    font-family: var(--mono);
+    font-size: 11px;
+    word-break: break-all;
+    color: var(--ink-mid);
+    line-height: 1.7;
+    margin-bottom: 12px;
+  }
+
+  /* state controls (music builder) */
+  .state-controls {
+    display: flex; flex-wrap: wrap; gap: 22px;
+    margin-bottom: 16px;
+  }
+  .state-group { display: flex; flex-direction: column; gap: 7px; }
+  .state-group-label {
+    font-size: 9px; font-weight: 400;
+    letter-spacing: 3px; text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .seg { display: flex; }
+  .seg-btn {
+    font-size: 10px; font-weight: 300;
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    color: var(--ink-dim);
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+    white-space: nowrap;
+  }
+  .seg-btn + .seg-btn { border-left: none; }
+  .seg-btn:hover { color: var(--ink); }
+  .seg-btn.active { background: var(--ink-dim); color: var(--bg); border-color: var(--ink-dim); }
+
+  .toggle-group { display: flex; gap: 6px; align-items: center; }
+  .toggle-btn {
+    font-size: 11px; font-weight: 300;
+    padding: 7px 13px;
+    border: 1px solid var(--border);
+    color: var(--ink-dim);
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+  }
+  .toggle-btn:hover { color: var(--ink); }
+  .toggle-btn.active { background: var(--col-accent); color: var(--bg); border-color: var(--col-accent); }
+  .toggle-label {
+    font-size: 9px; font-weight: 400;
+    letter-spacing: 3px; text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-right: 4px;
+  }
+
+  .pitch-row { display: flex; gap: 6px; flex-wrap: wrap; margin: 16px 0; }
+  .pitch-btn {
+    width: 46px; height: 46px;
+    font-family: var(--sans);
+    font-size: 15px; font-weight: 400;
+    border: 1px solid var(--ink-dim);
+    background: transparent;
+    color: var(--ink);
+    cursor: pointer;
+    transition: background 0.1s, color 0.1s;
+  }
+  .pitch-btn:hover { background: var(--ink); color: var(--bg); }
+  .pitch-btn.wide {
+    width: auto; padding: 0 16px;
+    font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--ink-dim); border-color: var(--border);
+  }
+  .pitch-btn.wide:hover { background: var(--ink-dim); color: var(--bg); }
+
+  .builder-preview {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 16px 18px;
+    font-size: 14px;
+    line-height: 2;
+    min-height: 56px;
+    margin-bottom: 14px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="logo">
+      <span class="logo-m">𝕄</span>
+      <span class="logo-sep">/</span>
+      <span class="logo-sub">memory player</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:18px">
+      <span id="sound-toggle">Music Box</span>
+      <span id="theme-toggle">Light</span>
+    </div>
+  </header>
+
+  <!-- Encode input -->
+  <section>
+    <div class="section-label">Encode a Memory</div>
+    <div class="tabs" id="encode-tabs">
+      <div class="tab active" data-tab="text">Text</div>
+      <div class="tab" data-tab="music">Music</div>
+    </div>
+
+    <!-- Text encoder -->
+    <div class="encode-pane" id="pane-text">
+      <textarea id="enc-text-input" placeholder="Type a message to encode…"></textarea>
+      <div class="tabs sub" id="text-mode-tabs" style="margin-top:12px; margin-bottom:0">
+        <div class="tab active" data-mode="base">Base — printable ASCII, ≤ 64 characters</div>
+        <div class="tab" data-mode="utf8">UTF-8 — any text, ≤ 63 bytes</div>
+      </div>
+      <div class="capacity-bar">
+        <div class="capacity-track"><div class="capacity-fill" id="text-cap-fill"></div></div>
+        <div class="capacity-label" id="text-cap-label"></div>
+      </div>
+      <div class="input-row">
+        <button class="btn primary" id="enc-text-btn">Generate Memory</button>
+      </div>
+      <div class="encode-output" id="text-output" style="display:none"></div>
+    </div>
+
+    <!-- Music encoder -->
+    <div class="encode-pane" id="pane-music" style="display:none">
+      <div class="state-controls">
+        <div class="state-group" data-dim="4">
+          <div class="state-group-label">Octave</div>
+          <div class="seg"></div>
+        </div>
+        <div class="state-group" data-dim="5">
+          <div class="state-group-label">Duration</div>
+          <div class="seg"></div>
+        </div>
+        <div class="state-group" data-dim="6">
+          <div class="state-group-label">Dynamics</div>
+          <div class="seg"></div>
+        </div>
+        <div class="state-group" data-dim="7">
+          <div class="state-group-label">Tempo</div>
+          <div class="seg"></div>
+        </div>
+      </div>
+
+      <div class="input-row" style="margin-top:0">
+        <div class="toggle-group" id="accidental-toggles">
+          <span class="toggle-label">Accidental</span>
+        </div>
+        <div class="toggle-group" id="modifier-toggles">
+          <span class="toggle-label">Modifiers</span>
+        </div>
+      </div>
+
+      <div class="pitch-row" id="pitch-row"></div>
+
+      <div class="capacity-bar">
+        <div class="capacity-track"><div class="capacity-fill" id="music-cap-fill"></div></div>
+        <div class="capacity-label" id="music-cap-label"></div>
+      </div>
+
+      <div class="builder-preview" id="builder-preview"></div>
+
+      <div class="section-label" style="margin-top:18px">Score Text</div>
+      <textarea id="score-text-area" placeholder="Paste a score here (e.g. D4qC4qE4w...), then Import — or click Export to fill this with the sequence above."></textarea>
+      <div class="input-row">
+        <button class="btn" id="score-import-btn">Import</button>
+        <select id="score-export-format">
+          <option value="full">Score (Unicode)</option>
+          <option value="compact">Compact (ASCII)</option>
+          <option value="pitches">Pitches only (SPN)</option>
+        </select>
+        <button class="btn" id="score-export-btn">Export</button>
+        <button class="btn" id="score-copy-btn">Copy</button>
+      </div>
+      <div class="error-msg" id="score-text-error"></div>
+
+      <div class="input-row">
+        <button class="btn primary" id="enc-music-btn">Generate Memory</button>
+      </div>
+      <div class="encode-output" id="music-output" style="display:none"></div>
+    </div>
+  </section>
+
+  <!-- Decode input -->
+  <section>
+    <div class="section-label">Decode a Memory</div>
+    <textarea id="hex-input" placeholder="Paste a 64-byte nNonce (128 hex characters)…"></textarea>
+    <div class="input-row">
+      <button class="btn primary" id="decode-btn">Decode</button>
+      <button class="btn" id="clear-btn">Clear</button>
+    </div>
+    <div class="chips" id="example-chips"></div>
+    <div class="error-msg" id="error-msg"></div>
+  </section>
+
+  <!-- Result -->
+  <section id="result-section" style="display:none">
+    <div class="section-label">Decoded</div>
+    <div class="mode-row">
+      <span class="mode-badge" id="mode-badge">—</span>
+      <span class="mode-detail" id="mode-detail"></span>
+    </div>
+    <div class="capacity-bar" id="result-capacity" style="display:none">
+      <div class="capacity-track"><div class="capacity-fill" id="result-cap-fill"></div></div>
+      <div class="capacity-label" id="result-cap-label"></div>
+    </div>
+
+    <div class="stream" id="stream-view"></div>
+
+    <div id="music-section" style="display:none">
+      <div class="config-note" id="music-emergent-note" style="display:none; margin-top:0; margin-bottom:14px"></div>
+      <div class="roll-wrap" id="roll-wrap"></div>
+      <div class="playback-bar">
+        <button class="btn primary" id="play-btn">▶ Play</button>
+        <input type="text" id="combo-input" placeholder="block heights separated by spaces (blank = latest 3)">
+        <button class="btn" id="combo-load-btn">Load</button>
+        <span class="playback-info" id="playback-info"></span>
+      </div>
+      <div class="error-msg" id="combo-error"></div>
+      <div class="score-list" id="score-list"></div>
+    </div>
+  </section>
+
+  <!-- Live node scan -->
+  <section>
+    <div class="section-label">Scan Live Node</div>
+    <div class="input-row" style="margin-top:0">
+      <input type="text" id="scan-start" placeholder="Start height or hash (blank = latest)">
+      <input type="number" id="scan-count" placeholder="Count" value="10" min="1" max="200" style="flex:0 0 90px">
+      <button class="btn" id="scan-btn">Scan</button>
+    </div>
+    <div class="input-row" style="margin-top:8px; flex:0 0 auto">
+      <label class="checkbox-label"><input type="checkbox" id="scan-sort-score" checked> Sort by consonance score</label>
+    </div>
+    <div class="config-note">
+      Blank "start" scans backward from the tip; a height or hash scans
+      forward from there. All decodable blocks are shown — including
+      "unknown" markers, read as packed-music nibbles anyway — except
+      those with no nonce field.
+    </div>
+    <div id="scan-results"></div>
+    <div class="scan-status" id="scan-status"></div>
+  </section>
+
+</div>
+
+<script>
+const root   = document.documentElement;
+const toggle = document.getElementById('theme-toggle');
+let soundMode = 'musicbox'; // playback voicing -- see TIMBRES below
+
+(function initTheme() {
+  const saved = localStorage.getItem('mem-theme') || 'light';
+  root.dataset.theme = saved;
+  toggle.textContent = saved === 'light' ? 'Light' : 'Night';
+})();
+
+toggle.addEventListener('click', () => {
+  const next = root.dataset.theme === 'light' ? 'dark' : 'light';
+  root.dataset.theme = next;
+  toggle.textContent = next === 'light' ? 'Light' : 'Night';
+  localStorage.setItem('mem-theme', next);
+});
+
+const MUSIC_MODE = 129;
+const UTF8_MODE  = 128;
+const MUSIC_NIBBLES = 126;
+const Dim = { OCTAVE: 4, DURATION: 5, DYNAMICS: 6, TEMPO: 7 };
+
+// Current inline allocation: octave 3 / duration 3 / dynamics 1 / tempo 0
+const INLINE_STATE = {
+  9:  [Dim.OCTAVE,   2], // middle octave (default-restore)
+  10: [Dim.DURATION, 2], // quarter note (default-restore)
+  11: [Dim.DURATION, 3], // eighth note
+  12: [Dim.DURATION, 1], // half note
+  13: [Dim.OCTAVE,   4], // high octave
+  14: [Dim.OCTAVE,   0], // low octave
+  15: [Dim.DYNAMICS, 2], // mf (default-restore)
+};
+const DEFAULTS = { octave: 2, duration: 2, dynamics: 2, tempo: 2 };
+
+function nibbleByteIndex(j) { return 62 - (j >> 1); }
+function readNibble(nonce, j) {
+  const b = nonce[nibbleByteIndex(j)];
+  return (j & 1) === 0 ? (b >> 4) & 0xF : b & 0xF;
+}
+
+function decodeMusic(nonce) {
+  let { octave, duration, dynamics, tempo } = DEFAULTS;
+  let pending = { sharp: false, flat: false, natural: false, dotted: false, tie: false };
+  const clear = () => { for (const k in pending) pending[k] = false; };
+
+  const events = [];
+  let j = 0;
+  while (j < MUSIC_NIBBLES) {
+    const s = readNibble(nonce, j); j++;
+    if (s === 0) {
+      events.push({ type: 'rest', duration, dynamics });
+      clear();
+    } else if (s >= 1 && s <= 7) {
+      events.push({
+        type: 'note', pitch: s, octave, duration, dynamics,
+        sharp: pending.sharp, flat: pending.flat, natural: pending.natural,
+        dotted: pending.dotted, tie: pending.tie,
+      });
+      clear();
+    } else if (s >= 9 && s <= 15) {
+      const [dim, level] = INLINE_STATE[s];
+      if (dim === Dim.OCTAVE) octave = level;
+      else if (dim === Dim.DURATION) duration = level;
+      else if (dim === Dim.DYNAMICS) dynamics = level;
+      else if (dim === Dim.TEMPO) tempo = level;
+      events.push({ type: 'state', dim, level });
+    } else {
+      if (j >= MUSIC_NIBBLES) break;
+      const sel = readNibble(nonce, j); j++;
+      if (sel === 0) {
+        break;
+      } else if (sel === 1) {
+        pending.sharp = true; pending.flat = false; pending.natural = false;
+      } else if (sel === 2) {
+        pending.flat = true; pending.sharp = false; pending.natural = false;
+      } else if (sel === 10) {
+        pending.natural = true; pending.sharp = false; pending.flat = false;
+      } else if (sel === 3) {
+        pending.dotted = true;
+      } else if (sel === 11) {
+        pending.tie = true;
+      } else if (sel === 8) {
+        clear();
+      } else if (sel === 9) {
+        events.push({ type: 'linebreak' });
+      } else if (sel >= 4 && sel <= 7) {
+        if (j >= MUSIC_NIBBLES) break;
+        const arg = readNibble(nonce, j); j++;
+        const level = Math.min(arg, 4);
+        const dim = sel;
+        if (dim === Dim.OCTAVE) octave = level;
+        else if (dim === Dim.DURATION) duration = level;
+        else if (dim === Dim.DYNAMICS) dynamics = level;
+        else if (dim === Dim.TEMPO) tempo = level;
+        events.push({ type: 'state', dim, level });
+      } else {
+        break;
+      }
+    }
+  }
+  return events;
+}
+
+function decodeBase(nonce) {
+  let { octave, duration, dynamics, tempo } = DEFAULTS;
+  let pending = { sharp: false, flat: false, dotted: false };
+  const clear = () => { pending.sharp = false; pending.flat = false; pending.dotted = false; };
+
+  const events = [];
+  let i = 63;
+  while (i >= 0) {
+    const b = nonce[i]; i--;
+    if (b === 0) {
+      let allZero = true;
+      for (let k = i; k >= 0; k--) { if (nonce[k] !== 0) { allZero = false; break; } }
+      if (allZero) break;
+      events.push({ type: 'rest', duration, dynamics });
+      clear();
+    } else if (b >= 1 && b <= 7) {
+      events.push({
+        type: 'note', pitch: b, octave, duration, dynamics,
+        sharp: pending.sharp, flat: pending.flat, natural: false,
+        dotted: pending.dotted, tie: false,
+      });
+      clear();
+    } else if (b >= 8 && b <= 12) {
+      octave = b - 8;
+      events.push({ type: 'state', dim: Dim.OCTAVE, level: octave });
+    } else if (b >= 13 && b <= 17) {
+      duration = b - 13;
+      events.push({ type: 'state', dim: Dim.DURATION, level: duration });
+    } else if (b >= 18 && b <= 22) {
+      dynamics = b - 18;
+      events.push({ type: 'state', dim: Dim.DYNAMICS, level: dynamics });
+    } else if (b === 23) {
+      pending.sharp = true; pending.flat = false;
+    } else if (b === 24) {
+      pending.flat = true; pending.sharp = false;
+    } else if (b >= 25 && b <= 29) {
+      tempo = b - 25;
+      events.push({ type: 'state', dim: Dim.TEMPO, level: tempo });
+    } else if (b === 30) {
+      pending.dotted = true;
+    } else if (b === 31) {
+      clear();
+    } else if (b >= 32 && b <= 126) {
+      events.push({ type: 'text', ch: String.fromCharCode(b) });
+      clear();
+    } else if (b === 127) {
+      events.push({ type: 'linebreak' });
+    }
+  }
+  return events;
+}
+
+function decodeUtf8(nonce) {
+  const raw = [];
+  let i = 62;
+  while (i >= 0) {
+    const b = nonce[i];
+    if (b === 0x00) break;
+    raw.push(b);
+    i--;
+  }
+  return new TextDecoder('utf-8', { fatal: false }).decode(new Uint8Array(raw));
+}
+
+function decodeNonce(nonce) {
+  if (nonce.length !== 64) throw new Error('nonce must be 64 bytes');
+  const head = nonce[63];
+  if (head <= 127) return { mode: 'base', events: decodeBase(nonce) };
+  if (head === UTF8_MODE) return { mode: 'utf8', text: decodeUtf8(nonce) };
+  if (head === MUSIC_MODE) return { mode: 'music', events: decodeMusic(nonce) };
+  return { mode: 'reserved', head };
+}
+
+function hexToBytes(hex) {
+  const clean = hex.trim().replace(/\s+/g, '').replace(/^0x/i, '');
+  if (clean.length !== 128) throw new Error(`Expected 128 hex characters (64 bytes), got ${clean.length}.`);
+  if (!/^[0-9a-fA-F]+$/.test(clean)) throw new Error('Not valid hexadecimal.');
+  const out = new Uint8Array(64);
+  for (let i = 0; i < 64; i++) out[i] = parseInt(clean.substr(i * 2, 2), 16);
+  return out;
+}
+
+function bytesToHex(bytes) {
+  return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+const MUSIC_TRAP = MUSIC_NIBBLES - 1;          // 125
+const MUSIC_MAX_WITH_EOF = MUSIC_NIBBLES - 2;  // 124
+
+const INLINE_FOR = {};
+for (const [code, [dim, level]] of Object.entries(INLINE_STATE)) {
+  INLINE_FOR[`${dim},${level}`] = Number(code);
+}
+
+// events: array of { type:'note', pitch, sharp, flat, natural, dotted, tie }
+//                 | { type:'rest' } | { type:'linebreak' }
+//                 | { type:'state', dim, level }
+function eventNibbles(events) {
+  const out = [];
+  for (const e of events) {
+    if (e.type === 'note') {
+      if (e.sharp) out.push(8, 1);
+      else if (e.flat) out.push(8, 2);
+      else if (e.natural) out.push(8, 10);
+      if (e.dotted) out.push(8, 3);
+      if (e.tie) out.push(8, 11);
+      out.push(e.pitch);
+    } else if (e.type === 'rest') {
+      out.push(0);
+    } else if (e.type === 'linebreak') {
+      out.push(8, 9);
+    } else if (e.type === 'state') {
+      const key = `${e.dim},${e.level}`;
+      if (key in INLINE_FOR) out.push(INLINE_FOR[key]);
+      else out.push(8, e.dim, e.level);
+    }
+  }
+  return out;
+}
+
+function packNibbles(nibbles) {
+  const buf = new Uint8Array(64);
+  buf[63] = MUSIC_MODE;
+  nibbles.forEach((v, j) => {
+    const bi = nibbleByteIndex(j);
+    if ((j & 1) === 0) buf[bi] = (buf[bi] & 0x0F) | ((v & 0xF) << 4);
+    else buf[bi] = (buf[bi] & 0xF0) | (v & 0xF);
+  });
+  return buf;
+}
+
+// Never throws -- for live capacity meters. C4: exactly 125 nibbles can't be
+// encoded (the EOF-cost trap); >126 doesn't fit.
+function checkCanonicalMusic(events) {
+  const n = eventNibbles(events).length;
+  if (n === MUSIC_TRAP) return { ok: false, nibbleCount: n, error: `Exactly ${MUSIC_TRAP} nibbles — this length can't be encoded. Add or remove one event to step around the trap.` };
+  if (n > MUSIC_NIBBLES) return { ok: false, nibbleCount: n, error: `${n} nibbles exceeds the ${MUSIC_NIBBLES}-nibble field by ${n - MUSIC_NIBBLES}.` };
+  return { ok: true, nibbleCount: n };
+}
+
+function encodeMusic(events) {
+  const nibbles = eventNibbles(events);
+  const n = nibbles.length;
+  if (n === MUSIC_TRAP) throw new Error(`Exactly ${MUSIC_TRAP} nibbles — add or remove one event.`);
+  if (n > MUSIC_NIBBLES) throw new Error(`${n} nibbles exceeds the ${MUSIC_NIBBLES}-nibble field.`);
+  const final = (n <= MUSIC_MAX_WITH_EOF) ? nibbles.concat([8, 0]) : nibbles;
+  return packNibbles(final);
+}
+
+function encodeUtf8Mode(text) {
+  if (text.includes('\u0000')) throw new Error('U+0000 is not allowed in UTF-8 mode content.');
+  const raw = new TextEncoder().encode(text);
+  if (raw.length > 63) throw new Error(`This is ${raw.length} UTF-8 bytes — exceeds the 63-byte field by ${raw.length - 63}.`);
+  const buf = new Uint8Array(64);
+  buf[63] = UTF8_MODE;
+  let pos = 62;
+  for (const byte of raw) { buf[pos] = byte; pos--; }
+  if (pos >= 0) buf[pos] = 0x00; // optional terminator, only when a byte is free
+  return buf;
+}
+
+// Base mode pure text: printable ASCII 32..126, packed from nonce[63] down.
+// Up to 64 characters fit -- no mode marker is needed since nonce[63] <= 127.
+function encodeBaseText(text) {
+  const chars = Array.from(text);
+  if (chars.length > 64) throw new Error(`This is ${chars.length} characters — exceeds the 64-character field by ${chars.length - 64}.`);
+  const buf = new Uint8Array(64);
+  let i = 63;
+  for (const ch of chars) {
+    const code = ch.codePointAt(0);
+    if (code < 32 || code > 126) throw new Error(`"${ch}" (U+${code.toString(16).toUpperCase()}) isn't printable ASCII (32-126) — base mode only supports the original byte map.`);
+    buf[i] = code; i--;
+  }
+  return buf;
+}
+
+const PITCH_SEMITONE = { 1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11 };
+const PITCH_NAME     = { 1: 'C', 2: 'D', 3: 'E', 4: 'F', 5: 'G', 6: 'A', 7: 'B' };
+const DUR_BEATS = [4, 2, 1, 0.5, 0.25];
+const DUR_NAME  = ['whole', 'half', 'quarter', 'eighth', 'sixteenth'];
+const DYN_GAIN  = [0.06, 0.14, 0.30, 0.55, 0.85];
+const DYN_NAME  = ['pp', 'p', 'mf', 'f', 'ff'];
+const TEMPO_BPM  = [50, 76, 108, 138, 176];
+const TEMPO_NAME = ['Largo', 'Andante', 'Moderato', 'Allegro', 'Presto'];
+const DIM_NAME = { 4: 'octave', 5: 'duration', 6: 'dynamics', 7: 'tempo' };
+
+function noteMidi(n) {
+  const oct = n.octave + 2; // level 0..4 -> octave number 2..6
+  let semis = PITCH_SEMITONE[n.pitch];
+  if (n.sharp) semis += 1;
+  if (n.flat) semis -= 1;
+  return 12 * (oct + 1) + semis; // C4 = MIDI 60
+}
+function freqFromMidi(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+
+function noteLabel(n) {
+  let s = PITCH_NAME[n.pitch];
+  if (n.sharp) s += '\u266F';
+  else if (n.flat) s += '\u266D';
+  else if (n.natural) s += '\u266E';
+  s += (n.octave + 2);
+  if (n.dotted) s += '\u00B7';
+  if (n.tie) s += '\u203F';
+  return s;
+}
+
+// ASCII variant of noteLabel -- # / b / n for accidentals, . for dot, ~ for
+// tie, used by the "Compact (ASCII)" score-text export format.
+function noteLabelAscii(n) {
+  let s = PITCH_NAME[n.pitch];
+  if (n.sharp) s += '#';
+  else if (n.flat) s += 'b';
+  else if (n.natural) s += 'n';
+  s += (n.octave + 2);
+  if (n.dotted) s += '.';
+  if (n.tie) s += '~';
+  return s;
+}
+
+// Pitch name only (Scientific Pitch Notation), no duration/dot/tie -- used
+// by the "Pitches only (SPN)" export format.
+function pitchOnlyLabel(n) {
+  let s = PITCH_NAME[n.pitch];
+  if (n.sharp) s += '#';
+  else if (n.flat) s += 'b';
+  else if (n.natural) s += 'n';
+  return s + (n.octave + 2);
+}
+
+// Score text import/export
+// A score-text token is one of:
+//   - a note:  <PITCH A-G><accidental?><octave 2-6><dot?><tie?><dur letter>
+//     e.g. "D4q", "G#2e", "C4.q", "D4~q"  (accidentals: # b n or ♯ ♭ ♮;
+//     dot: . or ·; tie: ~ or ‿; duration letter: w h q e s)
+//   - a rest:  "rest"/"r" + <dur letter>, e.g. "restq" or "rq"
+//   - a state change: "[octave→C4]" / "[duration→whole]" /
+//     "[dynamics→mf]" / "[tempo→Allegro]" (arrow: → or ->)
+//   - a linebreak: "|" or a newline
+// This is (almost) exactly what renderScoreList prints, so pasting a
+// decoded Memory's score back in round-trips. Octave/duration brackets
+// are redundant -- every note already carries its own octave+duration --
+// so on import they're parsed for validation but don't themselves emit
+// state events; only dynamics/tempo brackets do (and only when they
+// actually change from the current value, same as the click-builder's
+// "no-op if unchanged" rule).
+const PITCH_FROM_LETTER = { C: 1, D: 2, E: 3, F: 4, G: 5, A: 6, B: 7 };
+const DUR_LETTER = { w: 0, h: 1, q: 2, e: 3, s: 4 };
+
+function parseScoreText(text) {
+  const tracked = { octave: DEFAULTS.octave, duration: DEFAULTS.duration, dynamics: DEFAULTS.dynamics, tempo: DEFAULTS.tempo };
+  const events = [];
+  const s = text.replace(/\s+/g, '');
+  let i = 0;
+
+  const fail = (msg) => { throw new Error(`${msg} (at position ${i}: "${s.slice(i, i + 12)}${s.length - i > 12 ? '\u2026' : ''}")`); };
+
+  while (i < s.length) {
+    const rest = s.slice(i);
+    let m;
+
+    // [dim -> value]
+    if ((m = rest.match(/^\[\s*(octave|duration|dynamics|tempo)\s*(?:\u2192|->)\s*([^\]]+)\]/i))) {
+      const dim = m[1].toLowerCase();
+      const val = m[2].trim();
+      if (dim === 'octave') {
+        const om = val.match(/^c?([2-6])$/i);
+        if (!om) fail(`Unknown octave "${val}" (expected C2-C6)`);
+        // Redundant with the next note's own octave digit -- validate the
+        // syntax but don't touch `tracked`, or the upcoming note's
+        // auto-diff would see "no change" and silently drop the actual
+        // state event.
+      } else if (dim === 'duration') {
+        const idx = DUR_NAME.findIndex(n => n.toLowerCase() === val.toLowerCase());
+        if (idx < 0) fail(`Unknown duration "${val}"`);
+        // Same as octave above -- validate only, don't sync `tracked`.
+      } else if (dim === 'dynamics') {
+        const idx = DYN_NAME.findIndex(n => n.toLowerCase() === val.toLowerCase());
+        if (idx < 0) fail(`Unknown dynamics "${val}" (expected pp/p/mf/f/ff)`);
+        if (idx !== tracked.dynamics) { events.push({ type: 'state', dim: Dim.DYNAMICS, level: idx }); tracked.dynamics = idx; }
+      } else { // tempo
+        const idx = TEMPO_NAME.findIndex(n => n.toLowerCase() === val.toLowerCase());
+        if (idx < 0) fail(`Unknown tempo "${val}" (expected Largo/Andante/Moderato/Allegro/Presto)`);
+        if (idx !== tracked.tempo) { events.push({ type: 'state', dim: Dim.TEMPO, level: idx }); tracked.tempo = idx; }
+      }
+      i += m[0].length;
+      continue;
+    }
+
+    // linebreak
+    if (rest[0] === '|') { events.push({ type: 'linebreak' }); i += 1; continue; }
+
+    // rest: "rest" or "r" + duration letter
+    if ((m = rest.match(/^(?:rest|r)([whqes])/i))) {
+      const dur = DUR_LETTER[m[1].toLowerCase()];
+      if (dur !== tracked.duration) { events.push({ type: 'state', dim: Dim.DURATION, level: dur }); tracked.duration = dur; }
+      events.push({ type: 'rest' });
+      i += m[0].length;
+      continue;
+    }
+
+    // note: pitch [accidental] octave [dot] [tie] duration-letter
+    if ((m = rest.match(/^([A-G])([#\u266F\u266Db\u266En]?)([2-6])([.\u00B7]?)([~\u203F]?)([whqes])/))) {
+      const pitch = PITCH_FROM_LETTER[m[1]];
+      const acc = m[2];
+      const sharp = acc === '#' || acc === '\u266F';
+      const flat = acc === 'b' || acc === '\u266D';
+      const natural = acc === 'n' || acc === '\u266E';
+      const octave = Number(m[3]) - 2;
+      const dotted = !!m[4];
+      const tie = !!m[5];
+      const duration = DUR_LETTER[m[6]];
+
+      if (octave !== tracked.octave) { events.push({ type: 'state', dim: Dim.OCTAVE, level: octave }); tracked.octave = octave; }
+      if (duration !== tracked.duration) { events.push({ type: 'state', dim: Dim.DURATION, level: duration }); tracked.duration = duration; }
+      events.push({ type: 'note', pitch, sharp, flat, natural, dotted, tie });
+      i += m[0].length;
+      continue;
+    }
+
+    fail('Unrecognized token');
+  }
+  return events;
+}
+
+// Render mEvents (the builder's event list, with octave/duration/dynamics
+// resolved by walking state events -- same convention as
+// renderBuilderPreview) as score text. 'full' matches renderScoreList's
+// display exactly (Unicode symbols, every state change shown). 'compact'
+// uses ASCII symbols and omits the redundant octave/duration brackets
+// (each note already carries its resolved octave+duration).
+function exportScoreText(events, format) {
+  if (format === 'pitches') {
+    // One-way "pitch skeleton": SPN names only, no rhythm/dynamics/tempo.
+    let octave = DEFAULTS.octave;
+    const parts = [];
+    events.forEach(e => {
+      if (e.type === 'note') {
+        parts.push(pitchOnlyLabel({ ...e, octave }));
+      } else if (e.type === 'rest') {
+        parts.push('rest');
+      } else if (e.type === 'linebreak') {
+        parts.push('\n');
+      } else if (e.type === 'state' && e.dim === Dim.OCTAVE) {
+        octave = e.level;
+      }
+      // duration/dynamics/tempo state events carry no pitch info -- skipped
+    });
+    return parts.join(' ');
+  }
+
+  let octave = DEFAULTS.octave, duration = DEFAULTS.duration;
+  const full = format === 'full';
+  const arrow = full ? '\u2192' : '->';
+  const parts = [];
+
+  events.forEach(e => {
+    if (e.type === 'note') {
+      const resolved = { ...e, octave, duration };
+      parts.push((full ? noteLabel(resolved) : noteLabelAscii(resolved)) + DUR_NAME[duration][0]);
+    } else if (e.type === 'rest') {
+      parts.push((full ? 'rest' : 'r') + DUR_NAME[duration][0]);
+    } else if (e.type === 'linebreak') {
+      parts.push('\n');
+    } else if (e.type === 'state') {
+      if (e.dim === Dim.OCTAVE) {
+        octave = e.level;
+        if (full) parts.push(`[octave${arrow}C${e.level + 2}]`);
+      } else if (e.dim === Dim.DURATION) {
+        duration = e.level;
+        if (full) parts.push(`[duration${arrow}${DUR_NAME[e.level]}]`);
+      } else if (e.dim === Dim.DYNAMICS) {
+        parts.push(`[dynamics${arrow}${DYN_NAME[e.level]}]`);
+      } else {
+        parts.push(`[tempo${arrow}${TEMPO_NAME[e.level]}]`);
+      }
+    }
+  });
+
+  return parts.join(full ? '' : ' ');
+}
+
+const EXAMPLES = [
+  { label: 'Twinkle Twinkle (Mozart)',
+    hex: '00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000182233445566551181' },
+  { label: 'Ode to Joy (Beethoven)',
+    hex: '00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080c23223113254453381' },
+  { label: 'Für Elise (Beethoven)',
+    hex: '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000007836016b1a7223812381b381' },
+  { label: 'Minuet in G (Bach)',
+    hex: '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008020b314588955a271562b81' },
+  { label: 'Octave echo (C2→C6)',
+    hex: '00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000188335115d13318435b1185913118435e181' },
+  { label: '消せない記憶 — 63 bytes UTF-8',
+    hex: '8882e39f81e38c82e39581e38baee6ab81e39381e39381e3a681e38c82e3be81e3bb88e5ab81e3968ee98c81e3b686e698a8e88481e3aa81e39b81e388b6e680' },
+  { label: 'Mixed (base, full 64B)',
+    hex: '7f01070610050403020108636973756d20726f6620646e61207364726f7720726f66206867756f6e65206d6f6f72203a73657479622072756f662d7974786953' },
+  { label: 'Max text — 64 chars base',
+    hex: '216c6c6120746120746e65707320657479622072656b72616d206f6e206874697720657265682074696620737265746361726168632072756f662d7974786953' },
+];
+
+const chipsEl = document.getElementById('example-chips');
+EXAMPLES.forEach(ex => {
+  const chip = document.createElement('div');
+  chip.className = 'chip';
+  chip.textContent = ex.label;
+  chip.addEventListener('click', () => {
+    document.getElementById('hex-input').value = ex.hex;
+    decode();
+  });
+  chipsEl.appendChild(chip);
+});
+
+const hexInput     = document.getElementById('hex-input');
+const errorMsg     = document.getElementById('error-msg');
+const resultSec    = document.getElementById('result-section');
+const modeBadge    = document.getElementById('mode-badge');
+const modeDetail   = document.getElementById('mode-detail');
+const streamView   = document.getElementById('stream-view');
+const musicSection = document.getElementById('music-section');
+const musicEmergentNote = document.getElementById('music-emergent-note');
+const rollWrap     = document.getElementById('roll-wrap');
+const scoreList    = document.getElementById('score-list');
+const playbackInfo = document.getElementById('playback-info');
+
+document.getElementById('decode-btn').addEventListener('click', decode);
+document.getElementById('clear-btn').addEventListener('click', () => {
+  hexInput.value = '';
+  errorMsg.classList.remove('show');
+  resultSec.style.display = 'none';
+  stopPlayback();
+});
+
+function showError(msg) {
+  errorMsg.textContent = msg;
+  errorMsg.classList.add('show');
+  resultSec.style.display = 'none';
+}
+
+function decode() {
+  stopPlayback();
+  errorMsg.classList.remove('show');
+  comboError.classList.remove('show');
+  let nonce;
+  try {
+    nonce = hexToBytes(hexInput.value);
+  } catch (e) {
+    showError(e.message);
+    return;
+  }
+  let result;
+  try {
+    result = decodeNonce(nonce);
+  } catch (e) {
+    showError('Decode error: ' + e.message);
+    return;
+  }
+  renderResult(result, nonce);
+}
+
+const resultCapacity = document.getElementById('result-capacity');
+const resultCapFill = document.getElementById('result-cap-fill');
+const resultCapLabel = document.getElementById('result-cap-label');
+
+function setCapacity(fillEl, labelEl, used, total, labelText) {
+  const pct = Math.min(100, (used / total) * 100);
+  fillEl.style.width = pct + '%';
+  const full = used >= total;
+  fillEl.classList.toggle('full', full);
+  labelEl.classList.toggle('full', full);
+  labelEl.textContent = `${used} / ${total} ${labelText}`;
+}
+
+// Mirrors decodeMusic's nibble-walk to find how many of the 126 nibbles are
+// "live" content (including the EOF pair, if present) vs. trailing
+// zero-padding in the drift zone.
+function musicNibblesUsed(nonce) {
+  let j = 0;
+  while (j < MUSIC_NIBBLES) {
+    const s = readNibble(nonce, j); j++;
+    if (s === 0 || (s >= 1 && s <= 7) || (s >= 9 && s <= 15)) continue;
+    if (j >= MUSIC_NIBBLES) break;
+    const sel = readNibble(nonce, j); j++;
+    if (sel === 0) break;             // EOF
+    if (sel >= 4 && sel <= 7) { if (j >= MUSIC_NIBBLES) break; j++; continue; }
+    if (sel >= 12) break;              // reserved
+  }
+  return j;
+}
+
+// Mirrors decodeBase's loop to find how many of the 64 bytes are live
+// content vs. the terminator + trailing zero-padding.
+function baseBytesUsed(nonce) {
+  let i = 63, count = 0;
+  while (i >= 0) {
+    const b = nonce[i]; i--;
+    if (b === 0) {
+      let allZero = true;
+      for (let k = i; k >= 0; k--) { if (nonce[k] !== 0) { allZero = false; break; } }
+      if (allZero) break;
+    }
+    count++;
+  }
+  return count;
+}
+
+function renderResult(result, nonce) {
+  resultSec.style.display = '';
+  resultCapacity.style.display = '';
+
+  let musicEvents, isEmergent;
+
+  if (result.mode === 'reserved') {
+    modeBadge.className = 'mode-badge';
+    modeBadge.textContent = 'Reserved';
+    modeDetail.textContent = `nonce[63] = ${result.head} — no mode is defined for this marker.`;
+    resultCapacity.style.display = 'none';
+    streamView.innerHTML = '<span class="empty-hint">Nothing to decode.</span>';
+    musicEvents = decodeMusic(nonce);
+    isEmergent = true;
+  } else if (result.mode === 'utf8') {
+    modeBadge.className = 'mode-badge';
+    modeBadge.textContent = 'UTF-8';
+    const used = new TextEncoder().encode(result.text).length;
+    modeDetail.textContent = `${used} content byte${used === 1 ? '' : 's'}`;
+    setCapacity(resultCapFill, resultCapLabel, used, 63, 'bytes (UTF-8 content)');
+    streamView.innerHTML = result.text.length
+      ? escapeHtml(result.text).replace(/\n/g, '<br>')
+      : '<span class="empty-hint">(empty)</span>';
+    musicEvents = decodeMusic(nonce);
+    isEmergent = true;
+  } else {
+    // base or music
+    const isMusic = result.mode === 'music';
+    modeBadge.className = 'mode-badge' + (isMusic ? ' music' : '');
+    modeBadge.textContent = isMusic ? 'Packed Music' : 'Base';
+    modeDetail.textContent = `${result.events.length} event${result.events.length === 1 ? '' : 's'}`;
+
+    if (isMusic) {
+      const used = musicNibblesUsed(nonce);
+      setCapacity(resultCapFill, resultCapLabel, used, MUSIC_NIBBLES, 'nibbles (incl. EOF marker if present)');
+    } else {
+      const used = baseBytesUsed(nonce);
+      setCapacity(resultCapFill, resultCapLabel, used, 64, 'bytes (incl. terminator if present)');
+    }
+
+    renderStream(result.events, isMusic);
+
+    musicEvents = decodeMusic(nonce);
+    isEmergent = !isMusic;
+  }
+
+  // Music section: for actual packed-music mode (129), nonce[63] is the
+  // EOF marker so decodeMusic(nonce) reproduces result.events exactly.
+  // For every other mode, the same lenient decoder is run on the same 126
+  // nibbles anyway -- it never errors, so it always produces *something*,
+  // usually a handful of notes with a few octave jumps, purely by chance.
+  // Either way it's played back the same way, across the full range --
+  // anyone playing a Memory here is already looking to hear what its
+  // bytes sound like, intentional or not.
+  let note = null;
+  if (isEmergent) {
+    const noteCount = musicEvents.filter(e => e.type === 'note').length;
+    note = `This Memory wasn't written as music — but reading its bytes as packed-music nibbles anyway turns up ${noteCount} note${noteCount === 1 ? '' : 's'}.`;
+  }
+  loadMusicSection(musicEvents, note);
+}
+
+// Renders the music section (roll + score-list + playback schedule) from a
+// flat event stream, with an optional info note shown above the roll. Used
+// both for a single decoded nonce's music (renderResult above) and for the
+// multi-block "Load" combo (loadBlockCombo below) -- either way it's the
+// same roll/score-list/playback, just sourced from different events.
+function loadMusicSection(events, note) {
+  const lines = extractMusicLines(events);
+  const hasNotes = lines.some(line => line.some(e => e.type === 'note' || e.type === 'rest'));
+  if (!hasNotes) {
+    musicSection.style.display = 'none';
+    currentSchedule = null;
+    return false;
+  }
+  musicSection.style.display = '';
+  if (note) {
+    musicEmergentNote.style.display = '';
+    musicEmergentNote.textContent = note;
+  } else {
+    musicEmergentNote.style.display = 'none';
+  }
+  renderRoll(lines);
+  renderScoreList(lines);
+  prepareSchedule(lines);
+  return true;
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// Copies the hex nNonce to the clipboard -- this is exactly what a miner's
+// nNonce field expects (128 hex characters = 64 bytes), same value shown
+// in .hexval above. Briefly relabels the button to confirm the copy.
+function copyToClipboard(text, btn) {
+  const original = btn.textContent;
+  const ok = () => { btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = original; }, 1200); };
+  const fail = () => { btn.textContent = 'Copy failed'; setTimeout(() => { btn.textContent = original; }, 1200); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(ok, fail);
+  } else {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      ok();
+    } catch {
+      fail();
+    }
+  }
+}
+
+// Stream (readable badge) view
+function renderStream(events, isMusic) {
+  if (!events.length) {
+    streamView.innerHTML = '<span class="empty-hint">(empty — only zero-padding)</span>';
+    return;
+  }
+  let html = '';
+  events.forEach(e => {
+    if (e.type === 'text') {
+      html += escapeHtml(e.ch);
+    } else if (e.type === 'linebreak') {
+      html += '<br>';
+    } else if (e.type === 'note') {
+      html += `<span class="badge note">${noteLabel(e)} ${DUR_NAME[e.duration]} ${DYN_NAME[e.dynamics]}</span>`;
+    } else if (e.type === 'rest') {
+      html += `<span class="badge rest">rest ${DUR_NAME[e.duration]}</span>`;
+    } else if (e.type === 'state') {
+      let val;
+      if (e.dim === Dim.OCTAVE) val = 'C' + (e.level + 2);
+      else if (e.dim === Dim.DURATION) val = DUR_NAME[e.level];
+      else if (e.dim === Dim.DYNAMICS) val = DYN_NAME[e.level];
+      else val = TEMPO_NAME[e.level];
+      html += `<span class="badge state">${DIM_NAME[e.dim]} \u2192 ${val}</span>`;
+    }
+  });
+  streamView.innerHTML = html;
+}
+
+// Split into "lines" at linebreaks; keep only note/rest/state
+function extractMusicLines(events) {
+  const lines = [[]];
+  events.forEach(e => {
+    if (e.type === 'linebreak') {
+      lines.push([]);
+    } else if (e.type === 'note' || e.type === 'rest' || e.type === 'state') {
+      lines[lines.length - 1].push(e);
+    }
+  });
+  return lines.filter(line => line.length > 0);
+}
+
+const PX_PER_BEAT = 56;
+const ROLL_LINE_H = 132;
+const TILE_H = 16;
+const MIDI_LO = 33; // a little below C2
+const MIDI_HI = 88; // a little above C6
+
+function pitchY(midi) {
+  const frac = (midi - MIDI_LO) / (MIDI_HI - MIDI_LO);
+  const usable = ROLL_LINE_H - TILE_H - 8;
+  return 4 + Math.max(0, Math.min(1, frac)) * usable;
+}
+
+function renderRoll(lines) {
+  rollWrap.innerHTML = '';
+  rollTiles = []; // for playhead lookup, populated in prepareSchedule
+
+  lines.forEach(line => {
+    const lineEl = document.createElement('div');
+    lineEl.className = 'roll-line';
+    let x = 0;
+    // Tracks horizontal [left,right) ranges already occupied at each
+    // vertical slot, so labels that are close together in x (even if not
+    // at the exact same x) don't visually overlap -- the next one drops
+    // to a lower slot instead.
+    const labelSlots = [];
+    const LABEL_CHAR_W = 6.5; // rough px/char for the 9px uppercase label font
+    line.forEach(e => {
+      if (e.type === 'note' || e.type === 'rest') {
+        const beats = DUR_BEATS[e.duration] * (e.dotted ? 1.5 : 1);
+        const w = Math.max(beats * PX_PER_BEAT, 18);
+        const tile = document.createElement('div');
+        if (e.type === 'note') {
+          tile.className = 'roll-tile';
+          const midi = noteMidi(e);
+          tile.style.bottom = pitchY(midi) + 'px';
+          tile.textContent = noteLabel(e);
+          tile.title = `${noteLabel(e)} · ${DUR_NAME[e.duration]} · ${DYN_NAME[e.dynamics]}`;
+          tile.dataset.gain = DYN_GAIN[e.dynamics];
+        } else {
+          tile.className = 'roll-tile rest';
+          tile.style.bottom = '6px';
+          tile.title = `rest · ${DUR_NAME[e.duration]}`;
+        }
+        tile.style.left = x + 'px';
+        tile.style.width = (w - 3) + 'px';
+        lineEl.appendChild(tile);
+        x += w;
+      } else if (e.type === 'state') {
+        const marker = document.createElement('div');
+        marker.className = 'roll-marker';
+        marker.style.left = x + 'px';
+        const label = document.createElement('div');
+        label.className = 'roll-marker-label';
+        let val;
+        if (e.dim === Dim.OCTAVE) val = 'C' + (e.level + 2);
+        else if (e.dim === Dim.DURATION) val = DUR_NAME[e.level];
+        else if (e.dim === Dim.DYNAMICS) val = DYN_NAME[e.level];
+        else val = TEMPO_NAME[e.level];
+        label.textContent = DIM_NAME[e.dim] + ' \u2192 ' + val;
+        const left = x + 3;
+        label.style.left = left + 'px';
+        const right = left + label.textContent.length * LABEL_CHAR_W;
+        let row = 0;
+        for (; ; row++) {
+          if (!labelSlots[row]) labelSlots[row] = [];
+          if (!labelSlots[row].some(r => left < r.right && right > r.left)) break;
+        }
+        labelSlots[row].push({ left, right });
+        label.style.top = (4 + row * 10) + 'px';
+        lineEl.appendChild(marker);
+        lineEl.appendChild(label);
+      }
+    });
+    const playhead = document.createElement('div');
+    playhead.className = 'playhead';
+    lineEl.appendChild(playhead);
+    lineEl.dataset.width = x;
+    rollWrap.appendChild(lineEl);
+  });
+}
+
+function renderScoreList(lines) {
+  let html = '';
+  lines.forEach((line, li) => {
+    line.forEach(e => {
+      if (e.type === 'note') {
+        html += `<span class="sl-note">${noteLabel(e)}<sub style="opacity:.6">${DUR_NAME[e.duration][0]}</sub></span>`;
+      } else if (e.type === 'rest') {
+        html += `<span class="sl-rest">rest<sub style="opacity:.6">${DUR_NAME[e.duration][0]}</sub></span>`;
+      } else if (e.type === 'state') {
+        let val;
+        if (e.dim === Dim.OCTAVE) val = 'C' + (e.level + 2);
+        else if (e.dim === Dim.DURATION) val = DUR_NAME[e.level];
+        else if (e.dim === Dim.DYNAMICS) val = DYN_NAME[e.level];
+        else val = TEMPO_NAME[e.level];
+        html += `<span class="sl-state">[${DIM_NAME[e.dim]}\u2192${val}]</span>`;
+      }
+    });
+    if (li < lines.length - 1) html += '<span class="sl-break"></span>';
+  });
+  scoreList.innerHTML = html;
+}
+
+let audioCtx = null;
+let currentSchedule = null;
+let rollTiles = [];   // {el, line, start, end}
+let rafId = null;
+let playStartCtxTime = 0;
+let playing = false;
+
+const playBtn = document.getElementById('play-btn');
+playBtn.addEventListener('click', startPlayback);
+
+// Block combo: load several blocks' music end-to-end
+const comboInput = document.getElementById('combo-input');
+const comboLoadBtn = document.getElementById('combo-load-btn');
+const comboError = document.getElementById('combo-error');
+comboLoadBtn.addEventListener('click', loadBlockCombo);
+
+// Each block can contribute dozens of note/state events, all rendered into
+// the roll/score-list and scheduled into Web Audio at once -- an unbounded
+// block count would make both unusably slow (or crash the tab).
+const COMBO_MAX_BLOCKS = 20;
+
+async function loadBlockCombo() {
+  stopPlayback();
+  comboError.classList.remove('show', 'notice');
+  comboLoadBtn.disabled = true;
+  try {
+    const raw = comboInput.value.trim();
+    let heights;
+    if (!raw) {
+      // Default: the latest 3 consecutive blocks (oldest first, so
+      // playback runs chronologically up to the tip).
+      const chain = await rpc('getblockchaininfo');
+      const tip = chain.blocks;
+      heights = [tip - 2, tip - 1, tip].filter(h => h >= 0);
+    } else {
+      heights = raw.split(/\s+/).map(tok => {
+        if (!/^\d+$/.test(tok)) throw new Error(`"${tok}" is not a block height.`);
+        return parseInt(tok, 10);
+      });
+      if (heights.length > COMBO_MAX_BLOCKS) {
+        throw new Error(`${heights.length} blocks requested \u2014 the limit is ${COMBO_MAX_BLOCKS} (each block can contribute dozens of notes, and the roll/score-list/playback all render every one of them).`);
+      }
+    }
+
+    const allEvents = [];
+    for (let i = 0; i < heights.length; i++) {
+      const height = heights[i];
+      // Each block is two sequential RPC round-trips -- on a slow node
+      // (or a long combo) this loop can take a moment, so show progress
+      // rather than leaving the button just sitting there disabled.
+      comboError.textContent = `Loading block #${height} (${i + 1} of ${heights.length})\u2026`;
+      comboError.classList.add('show', 'notice');
+      const hash = await rpc('getblockhash', [height]);
+      const blk = await rpc('getblock', [hash, true]);
+      let nonceHex = null;
+      if (typeof blk.nNonce === 'string' && blk.nNonce.replace(/^0x/i, '').length === 128) nonceHex = blk.nNonce;
+      else if (typeof blk.nonce === 'string' && blk.nonce.replace(/^0x/i, '').length === 128) nonceHex = blk.nonce;
+      if (!nonceHex) throw new Error(`Block #${height} has no usable nNonce field.`);
+      if (i > 0) allEvents.push({ type: 'linebreak' });
+      allEvents.push(...decodeMusic(hexToBytes(nonceHex)));
+    }
+
+    comboError.classList.remove('show', 'notice');
+    const note = `Loaded ${heights.length} block${heights.length === 1 ? '' : 's'} (#${heights.join(', #')}) \u2014 concatenated for continuous playback.`;
+    if (!loadMusicSection(allEvents, note)) {
+      comboError.textContent = 'None of these blocks produced any notes.';
+      comboError.classList.add('show');
+    }
+  } catch (e) {
+    comboError.classList.remove('notice');
+    comboError.textContent = e.message;
+    comboError.classList.add('show');
+  } finally {
+    comboLoadBtn.disabled = false;
+  }
+}
+
+// Walk each line, resolve tempo across the whole field, merge ties into
+// the previous note, and compute absolute start/end times (seconds) for
+// every note. Rests advance time without sounding. Linebreaks do not
+// pause time -- they are a visual layout device only.
+function prepareSchedule(lines) {
+  let bpm = TEMPO_BPM[DEFAULTS.tempo];
+  let t = 0;
+  const notes = []; // {start, end, midi, gain, lineIdx, tileIdx}
+  rollTiles = [];
+
+  lines.forEach((line, lineIdx) => {
+    let tileIdx = 0;
+    line.forEach(e => {
+      if (e.type === 'state' && e.dim === Dim.TEMPO) {
+        bpm = TEMPO_BPM[e.level];
+        return;
+      }
+      if (e.type === 'state') return; // octave/duration/dynamics already baked into notes
+      const beats = DUR_BEATS[e.duration] * (e.dotted ? 1.5 : 1);
+      const dur = beats * (60 / bpm);
+      if (e.type === 'rest') {
+        rollTiles.push({ lineIdx, tileIdx, start: t, end: t + dur, isRest: true });
+        tileIdx++;
+        t += dur;
+        return;
+      }
+      // note
+      if (e.tie && notes.length) {
+        const prev = notes[notes.length - 1];
+        prev.end += dur;
+        rollTiles.push({ lineIdx, tileIdx, start: t, end: t + dur, isRest: false, tieExtend: true });
+      } else {
+        notes.push({ start: t, end: t + dur, midi: noteMidi(e), gain: DYN_GAIN[e.dynamics] });
+        rollTiles.push({ lineIdx, tileIdx, start: t, end: t + dur, isRest: false });
+      }
+      tileIdx++;
+      t += dur;
+    });
+  });
+
+  currentSchedule = { notes, total: t };
+  playbackInfo.innerHTML = `<b>${notes.length}</b> notes &middot; <b>${t.toFixed(1)}s</b> total`;
+}
+
+// Playback voicings
+// Each voicing is additive partials over a base oscillator type, shaped
+// by one of a few generic envelope "shapes":
+//   - 'ping'   : sharp attack, decays partway, holds until the note's
+//                nominal end, then rings out (Music Box)
+//   - 'strike' : sharp attack, then a single decay to silence,
+//                independent of the note's nominal duration -- bells/
+//                percussion ring as long as they ring, not as long as
+//                the "note" lasts (Chime, Glass, Marimba, Vibraphone)
+//   - 'adsr'   : attack -> decay to a sustain level -> hold until the
+//                note ends -> release (8-Bit, Strings/Pluck)
+//   - 'pad'    : slow attack -> hold at full level through the note ->
+//                release after the note ends (Pad, Organ)
+// Optional extras: `pitchDrop`/`pitchDropTime` (frequency envelope, for
+// struck-bar instruments), `detuneCents` (paired detuned voices per
+// partial, for chorus), `tremolo: {rate, depth}` (an LFO modulating the
+// envelope's gain, for shimmering sustained tones like Vibraphone).
+const TIMBRES = {
+  musicbox: {
+    label: 'Music Box',
+    oscType: 'sine',
+    // A handful of sine partials with slightly stretched (inharmonic)
+    // upper ratios -- real metal tines don't ring at perfectly integer
+    // multiples of the fundamental, and that slight mistuning is what
+    // gives a music box its "glassy/metallic" character.
+    partials: [[1, 1.00], [2.01, 0.40], [3.02, 0.16], [4.98, 0.07]],
+    envelope: 'ping',
+    attack: 0.003, pingDecay: 0.09, pingLevel: 0.38, sustainLevel: 0.08, ring: 0.28,
+    gainScale: 1,
+  },
+  chime: {
+    label: 'Chime',
+    oscType: 'sine',
+    // Tubular-bell-ish inharmonic ratios -- NOT simple integer multiples
+    // of the fundamental, which is where the "shimmer" comes from.
+    partials: [[1, 1.00], [2.76, 0.55], [5.40, 0.32], [8.93, 0.18], [13.34, 0.10]],
+    envelope: 'strike',
+    attack: 0.025, ring: 2.4,
+    gainScale: 0.6, // long overlapping tails -- keep headroom
+  },
+  glass: {
+    label: 'Glass',
+    oscType: 'sine',
+    // Same inharmonic family as Chime but brighter (more high-partial
+    // energy) and much shorter -- a quick glassy "ping" rather than a
+    // long shimmer.
+    partials: [[1, 1.00], [2.76, 0.50], [5.40, 0.45], [8.93, 0.35], [13.34, 0.20], [18.0, 0.10]],
+    envelope: 'strike',
+    attack: 0.002, ring: 0.55,
+    gainScale: 0.7,
+  },
+  marimba: {
+    label: 'Marimba',
+    oscType: 'sine',
+    // Strong fundamental plus the quiet high overtone that gives struck
+    // wooden bars their "woody" ring.
+    partials: [[1, 1.00], [3.93, 0.18], [9.4, 0.04]],
+    envelope: 'strike',
+    attack: 0.002, ring: 0.30,
+    // Struck bars dip slightly in pitch right after the attack.
+    pitchDrop: 0.06, pitchDropTime: 0.04,
+    gainScale: 0.9,
+  },
+  vibraphone: {
+    label: 'Vibraphone',
+    oscType: 'sine',
+    // Same overtone family as Marimba (metal bars over resonator tubes
+    // share the same "fundamental + high quiet overtone" shape), but the
+    // tubes give a much longer ring, and a slow amplitude tremolo is the
+    // instrument's signature shimmer.
+    partials: [[1, 1.00], [3.93, 0.15], [9.4, 0.03]],
+    envelope: 'strike',
+    attack: 0.004, ring: 1.8,
+    tremolo: { rate: 4.5, depth: 0.35 },
+    gainScale: 0.7,
+  },
+  chiptune: {
+    label: '8-Bit',
+    oscType: 'square', // square wave's own harmonics give the "buzzy" character
+    partials: [[1, 1.00]],
+    envelope: 'adsr',
+    attack: 0.002, decay: 0.04, sustainLevel: 0.5, release: 0.04,
+    gainScale: 0.35,
+  },
+  strings: {
+    label: 'Strings',
+    oscType: 'sawtooth', // already harmonically rich -- a single voice is enough
+    partials: [[1, 1.00]],
+    envelope: 'adsr',
+    attack: 0.008, decay: 0.12, sustainLevel: 0.35, release: 0.10,
+    detuneCents: 6, // two slightly-detuned saws -- a small "section" of players
+    gainScale: 0.28, // sawtooth is harmonically dense -- needs the most headroom
+  },
+  organ: {
+    label: 'Organ',
+    oscType: 'sine',
+    // Drawbar-style: a stack of integer harmonics at fixed levels,
+    // sustained for as long as the note is held -- no natural decay.
+    partials: [[1, 1.00], [2, 0.50], [3, 0.33], [4, 0.25], [5, 0.18], [6, 0.12]],
+    envelope: 'pad',
+    attack: 0.012, release: 0.06,
+    detuneCents: 3, // subtle beating between drawbars, like a real organ
+    gainScale: 0.4,
+  },
+  pad: {
+    label: 'Pad',
+    oscType: 'sine',
+    partials: [[1, 1.00], [2, 0.45], [3, 0.15]],
+    envelope: 'pad',
+    attack: 0.35, release: 0.5,
+    detuneCents: 5, // two voices per partial, detuned for a soft chorus
+    gainScale: 0.45,
+  },
+};
+const SOUND_MODES = Object.keys(TIMBRES);
+
+// Sound mode toggle
+const soundToggle = document.getElementById('sound-toggle');
+
+(function initSound() {
+  const saved = localStorage.getItem('mem-sound');
+  soundMode = TIMBRES[saved] ? saved : 'musicbox';
+  soundToggle.textContent = TIMBRES[soundMode].label;
+})();
+
+soundToggle.addEventListener('click', () => {
+  const idx = SOUND_MODES.indexOf(soundMode);
+  soundMode = SOUND_MODES[(idx + 1) % SOUND_MODES.length];
+  soundToggle.textContent = TIMBRES[soundMode].label;
+  localStorage.setItem('mem-sound', soundMode);
+});
+
+function playNote(freq, peakGain, t0, t1) {
+  const cfg = TIMBRES[soundMode] || TIMBRES.musicbox;
+  const env = audioCtx.createGain();
+  env.connect(audioCtx.destination);
+
+  const gain = peakGain * (cfg.gainScale ?? 1);
+  let stopAt;
+
+  switch (cfg.envelope) {
+    case 'ping': {
+      const { attack, pingDecay, pingLevel, sustainLevel, ring } = cfg;
+      env.gain.setValueAtTime(0.0001, t0);
+      env.gain.exponentialRampToValueAtTime(gain, t0 + attack);
+      env.gain.exponentialRampToValueAtTime(Math.max(gain * pingLevel, 0.0001), t0 + attack + pingDecay);
+      env.gain.exponentialRampToValueAtTime(Math.max(gain * sustainLevel, 0.0001), t1);
+      env.gain.exponentialRampToValueAtTime(0.0001, t1 + ring);
+      stopAt = t1 + ring + 0.05;
+      break;
+    }
+    case 'strike': {
+      const { attack, ring } = cfg;
+      env.gain.setValueAtTime(0.0001, t0);
+      env.gain.exponentialRampToValueAtTime(gain, t0 + attack);
+      env.gain.exponentialRampToValueAtTime(0.0001, t0 + ring);
+      stopAt = t0 + ring + 0.05;
+      break;
+    }
+    case 'adsr': {
+      const { attack, decay, sustainLevel, release } = cfg;
+      const decayEnd = t0 + attack + decay;
+      const releaseStart = Math.max(decayEnd, t1 - release);
+      const sustainGain = Math.max(gain * sustainLevel, 0.0001);
+      env.gain.setValueAtTime(0.0001, t0);
+      env.gain.exponentialRampToValueAtTime(gain, t0 + attack);
+      env.gain.exponentialRampToValueAtTime(sustainGain, decayEnd);
+      env.gain.setValueAtTime(sustainGain, releaseStart);
+      env.gain.exponentialRampToValueAtTime(0.0001, releaseStart + release);
+      stopAt = releaseStart + release + 0.05;
+      break;
+    }
+    case 'pad': {
+      const { attack, release } = cfg;
+      const peakAt = t0 + attack;
+      const releaseStart = Math.max(peakAt, t1 - release);
+      env.gain.setValueAtTime(0.0001, t0);
+      env.gain.exponentialRampToValueAtTime(gain, peakAt);
+      env.gain.setValueAtTime(gain, releaseStart);
+      env.gain.exponentialRampToValueAtTime(0.0001, releaseStart + release);
+      stopAt = releaseStart + release + 0.05;
+      break;
+    }
+  }
+
+  // Tremolo: an LFO feeding the envelope gain's AudioParam adds a small
+  // oscillating offset on top of whatever the envelope is doing.
+  if (cfg.tremolo) {
+    const lfo = audioCtx.createOscillator();
+    lfo.type = 'sine';
+    lfo.frequency.value = cfg.tremolo.rate;
+    const lfoGain = audioCtx.createGain();
+    lfoGain.gain.value = gain * cfg.tremolo.depth;
+    lfo.connect(lfoGain).connect(env.gain);
+    lfo.start(t0); lfo.stop(stopAt);
+  }
+
+  const voices = cfg.detuneCents ? [-cfg.detuneCents, cfg.detuneCents] : [0];
+  cfg.partials.forEach(([mult, partialGain]) => {
+    voices.forEach(detune => {
+      const osc = audioCtx.createOscillator();
+      osc.type = cfg.oscType;
+      const f = freq * mult;
+      if (cfg.pitchDrop) {
+        osc.frequency.setValueAtTime(f * (1 + cfg.pitchDrop), t0);
+        osc.frequency.exponentialRampToValueAtTime(f, t0 + cfg.pitchDropTime);
+      } else {
+        osc.frequency.value = f;
+      }
+      if (detune) osc.detune.value = detune;
+      const g = audioCtx.createGain();
+      g.gain.value = partialGain / voices.length;
+      osc.connect(g).connect(env);
+      osc.start(t0); osc.stop(stopAt);
+    });
+  });
+}
+
+function startPlayback() {
+  if (!currentSchedule || playing) return;
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+
+  const startAt = audioCtx.currentTime + 0.08;
+  playStartCtxTime = startAt;
+
+  currentSchedule.notes.forEach(n => {
+    const t0 = startAt + n.start;
+    const dur = n.end - n.start;
+    // Leave a small articulation gap before the next note so consecutive
+    // notes read as distinct beats rather than one continuous tone.
+    const gap = Math.min(0.05, dur * 0.25);
+    const t1 = startAt + n.end - gap;
+    playNote(freqFromMidi(n.midi), n.gain, t0, t1);
+  });
+
+  playing = true;
+  playBtn.disabled = true;
+  document.querySelectorAll('.playhead').forEach(p => p.style.display = '');
+  animatePlayhead();
+
+  // No Stop button -- playback always runs to completion. This resets the
+  // visual state once it does (already-scheduled audio rings out on its
+  // own regardless).
+  setTimeout(() => { if (playing) stopPlayback(); }, (currentSchedule.total + 0.15) * 1000);
+}
+
+function stopPlayback() {
+  playing = false;
+  playBtn.disabled = false;
+  if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+  document.querySelectorAll('.playhead').forEach(p => { p.style.display = 'none'; p.style.left = '0px'; });
+  document.querySelectorAll('.roll-tile.lit').forEach(t => t.classList.remove('lit'));
+}
+
+function animatePlayhead() {
+  if (!playing || !audioCtx) return;
+  const elapsed = audioCtx.currentTime - playStartCtxTime;
+  const lineEls = document.querySelectorAll('.roll-line');
+
+  if (elapsed >= currentSchedule.total) {
+    stopPlayback();
+    return;
+  }
+
+  // position playhead per line based on its own tiles' time range
+  lineEls.forEach((lineEl, idx) => {
+    const tiles = rollTiles.filter(t => t.lineIdx === idx);
+    if (!tiles.length) return;
+    const lineStart = Math.min(...tiles.map(t => t.start));
+    const lineEnd = Math.max(...tiles.map(t => t.end));
+    const ph = lineEl.querySelector('.playhead');
+    if (elapsed < lineStart || elapsed > lineEnd) {
+      ph.style.display = 'none';
+    } else {
+      ph.style.display = '';
+      const tileEls = lineEl.querySelectorAll('.roll-tile');
+      // map elapsed time within line to pixel x using tile geometry
+      let x = 0;
+      for (let i = 0; i < tiles.length; i++) {
+        const tl = tiles[i];
+        const el = tileEls[i];
+        if (elapsed >= tl.start && elapsed <= tl.end) {
+          const frac = (elapsed - tl.start) / Math.max(1e-6, tl.end - tl.start);
+          x = el.offsetLeft + frac * el.offsetWidth;
+          el.classList.add('lit');
+        } else {
+          el.classList.remove('lit');
+        }
+      }
+      ph.style.left = x + 'px';
+    }
+  });
+
+  rafId = requestAnimationFrame(animatePlayhead);
+}
+
+// NOTE: placeholder RPC credentials for a local node. Change rpcuser/rpcpassword
+// in your node config (and below) — do not reuse these defaults anywhere
+// other than a trusted local machine.
+const RPC = {
+  endpoint: 'http://localhost:9332',
+  user: 'memcoin',
+  pass: 'memcoinrpc',
+};
+
+const scanBtn = document.getElementById('scan-btn');
+const scanStartInput = document.getElementById('scan-start');
+const scanCountInput = document.getElementById('scan-count');
+const scanResults = document.getElementById('scan-results');
+const scanStatus = document.getElementById('scan-status');
+const scanSortScore = document.getElementById('scan-sort-score');
+
+scanBtn.addEventListener('click', scanRecentBlocks);
+scanSortScore.addEventListener('change', () => {
+  if (lastScanRows.length) renderScanRows(lastScanRows);
+});
+
+async function rpc(method, params = []) {
+  const res = await fetch(RPC.endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Basic ' + btoa(RPC.user + ':' + RPC.pass),
+    },
+    body: JSON.stringify({ jsonrpc: '1.0', id: 1, method, params }),
+  });
+  if (!res.ok) {
+    const t = await res.text().catch(() => res.statusText);
+    throw new Error('HTTP ' + res.status + ': ' + t.slice(0, 120));
+  }
+  const d = await res.json();
+  if (d.error) throw new Error(d.error.message || JSON.stringify(d.error));
+  return d.result;
+}
+
+// Heuristic "consonance" score
+// A rough proxy for "sounds pleasant" -- favors a narrow pitch range,
+// mostly-diatonic notes (few accidentals), mostly sounding (not resting),
+// and small/consonant melodic intervals between consecutive notes. 0-100,
+// higher = more "pleasant" by this proxy. This is NOT a real measure of
+// musical quality -- it ignores rhythm, repetition/motif, and cadence --
+// just a cheap way to surface candidates worth listening to. Returns null
+// if there are too few notes to judge (fewer than 2).
+const INTERVAL_SCORE = { 0: 1, 1: 0.85, 2: 1, 3: 0.9, 4: 0.9, 5: 0.8, 6: -0.6, 7: 0.9, 8: 0.3, 9: 0.7, 10: 0, 11: -0.4, 12: 0.5 };
+const LENGTH_TARGET = 16; // notes at/above this count get full credit for "melodic variety"
+function scoreMelody(events) {
+  const notes = events.filter(e => e.type === 'note');
+  const rests = events.filter(e => e.type === 'rest');
+  if (notes.length < 2) return null;
+
+  const midis = notes.map(noteMidi);
+  const span = Math.max(...midis) - Math.min(...midis);
+  const accidentals = notes.filter(e => e.sharp || e.flat).length;
+  const total = notes.length + rests.length;
+
+  let intervalTotal = 0;
+  for (let i = 1; i < midis.length; i++) {
+    const iv = Math.abs(midis[i] - midis[i - 1]);
+    const ivClass = Math.min(iv, 12);
+    intervalTotal += (INTERVAL_SCORE[ivClass] ?? -0.5) - Math.max(0, iv - 12) * 0.05;
+  }
+  const intervalScore = intervalTotal / (midis.length - 1);
+
+  const spanScore = Math.max(0, 1 - span / 36); // 0 semitones -> 1, 3 octaves -> 0
+  const accidentalScore = 1 - accidentals / notes.length;
+  const restScore = 1 - Math.min(rests.length / total, 1);
+  // Short melodies get "lucky" more easily on every score above -- fewer
+  // intervals/notes makes it easier to land entirely in the good range by
+  // chance. A longer melody that's only slightly less consistent isn't
+  // worse overall: more notes means more melodic movement, which is a
+  // good thing on its own, not something the occasional rougher interval
+  // should cancel out. LENGTH_TARGET notes or more gets full credit here.
+  const lengthScore = Math.min(1, notes.length / LENGTH_TARGET);
+
+  const raw = 0.30 * intervalScore + 0.20 * spanScore + 0.15 * accidentalScore + 0.15 * restScore + 0.20 * lengthScore;
+  return Math.max(0, Math.min(100, Math.round(raw * 100)));
+}
+
+function previewFor(hex) {
+  try {
+    const bytes = hexToBytes(hex);
+    const result = decodeNonce(bytes);
+    if (result.mode === 'utf8') return '"' + result.text.slice(0, 40) + '"';
+    if (result.mode === 'music') return '\u266A ' + result.events.filter(e => e.type === 'note' || e.type === 'rest').length + ' notes';
+    if (result.mode === 'base') {
+      const text = result.events.filter(e => e.type === 'text').map(e => e.ch).join('');
+      const notes = result.events.filter(e => e.type === 'note').length;
+      if (text && notes) return '"' + text.slice(0, 30) + '" + ' + notes + ' notes';
+      if (text) return '"' + text.slice(0, 40) + '"';
+      if (notes) return '\u266A ' + notes + ' notes';
+      return '(empty)';
+    }
+    // reserved (marker 130-255): no mode is defined, but decodeMusic is a
+    // total function over the same 64 bytes -- show what it finds anyway.
+    const notes2 = decodeMusic(bytes).filter(e => e.type === 'note' || e.type === 'rest').length;
+    return notes2 ? '\u266A ' + notes2 + ' notes (marker ' + result.head + ')' : '(marker ' + result.head + ', no notes)';
+  } catch {
+    return '—';
+  }
+}
+
+async function scanRecentBlocks() {
+  scanBtn.disabled = true;
+  scanStatus.classList.remove('error');
+  scanStatus.textContent = 'Connecting\u2026';
+  try {
+    const startRaw = scanStartInput.value.trim();
+    let count = parseInt(scanCountInput.value, 10);
+    if (!Number.isFinite(count) || count < 1) count = 10;
+    const requestedCount = count;
+    count = Math.min(count, 200);
+
+    // Blank (= chain tip) has nothing newer to walk towards, so it scans
+    // backwards (towards genesis, via previousblockhash). A specific
+    // start block scans forwards from there (towards the tip, via
+    // nextblockhash), i.e. the blocks mined *after* it.
+    let h, height, direction;
+    if (!startRaw) {
+      const chain = await rpc('getblockchaininfo');
+      h = chain.bestblockhash;
+      height = chain.blocks;
+      direction = 'backward';
+    } else if (/^[0-9a-fA-F]{64}$/.test(startRaw)) {
+      h = startRaw;
+      const blk0 = await rpc('getblock', [h, true]);
+      height = blk0.height;
+      direction = 'forward';
+    } else if (/^\d+$/.test(startRaw)) {
+      height = parseInt(startRaw, 10);
+      h = await rpc('getblockhash', [height]);
+      direction = 'forward';
+    } else {
+      throw new Error('Start must be a block height, a 64-character hash, or blank for the latest block.');
+    }
+
+    const ZERO_HASH = '0'.repeat(64);
+    const rows = [];
+    let stoppedEarly = false;
+    for (let i = 0; i < count && h && h !== ZERO_HASH; i++) {
+      let blk;
+      try {
+        blk = await rpc('getblock', [h, true]);
+      } catch {
+        stoppedEarly = true;
+        break; // a block in the walk couldn't be fetched -- stop but keep what we have
+      }
+      let nonceHex = null;
+      if (typeof blk.nNonce === 'string' && blk.nNonce.replace(/^0x/i, '').length === 128) {
+        nonceHex = blk.nNonce;
+      } else if (typeof blk.nonce === 'string' && blk.nonce.replace(/^0x/i, '').length === 128) {
+        nonceHex = blk.nonce;
+      }
+      rows.push({ height, hash: h, nonceHex });
+      if (direction === 'forward') {
+        h = blk.nextblockhash || null;
+        height++;
+      } else {
+        h = blk.previousblockhash;
+        height--;
+      }
+    }
+    const filteredOut = renderScanRows(rows);
+    const range = rows.length ? `#${rows[0].height}\u2013#${rows[rows.length - 1].height}` : '(none)';
+    const shown = rows.length - filteredOut;
+    let msg = `Connected \u2014 scanned ${rows.length} block${rows.length === 1 ? '' : 's'} (${range}), showing ${shown}.`;
+    if (requestedCount > 200) msg += ` (requested ${requestedCount}, capped at 200.)`;
+    if (filteredOut) msg += ` ${filteredOut} hidden (no nNonce field).`;
+    if (stoppedEarly) msg += ' Stopped early — a block in the walk could not be fetched.';
+    else if (rows.length < count) msg += direction === 'forward' ? ' Reached the tip of the chain.' : ' Reached the start of the chain.';
+    scanStatus.textContent = msg;
+  } catch (e) {
+    scanStatus.classList.add('error');
+    scanStatus.textContent = 'Could not reach the node: ' + e.message +
+      ' — decode manually using the box above instead.';
+  } finally {
+    scanBtn.disabled = false;
+  }
+}
+
+// Only base, UTF-8, and packed-music (129) are meaningful "Memory" reads --
+// reserved markers (130-255) and blocks with no decodable nonce are just
+// noise in this table, so they're filtered out. Returns the number of rows
+// that were filtered out, so the caller can mention it in the status line.
+let lastScanRows = [];
+
+function renderScanRows(rows) {
+  lastScanRows = rows;
+  scanResults.innerHTML = '';
+
+  const header = document.createElement('div');
+  header.className = 'scan-header';
+  header.innerHTML = '<span>Height</span><span>Hash</span><span>Mode</span><span>Preview</span><span title="A rough 0\u2013100 heuristic for how consonant this reading sounds \u2014 narrow pitch range, small/consonant intervals, few accidentals or rests, and enough notes for melodic variety. Not a real measure of musical quality.">Score</span><span></span>';
+
+  let shown = 0;
+  const entries = [];
+  rows.forEach(r => {
+    if (!r.nonceHex) return; // nothing to decode at all -- skip
+
+    let mode = 'unknown', preview, score = null;
+    try {
+      const bytes = hexToBytes(r.nonceHex);
+      const result = decodeNonce(bytes);
+      if (result.mode !== 'reserved') mode = result.mode;
+      preview = previewFor(r.nonceHex);
+      // Scored uniformly via decodeMusic regardless of mode -- this is
+      // the same "what would Load + Play sound like" reading used
+      // throughout the player (see loadMusicSection).
+      score = scoreMelody(decodeMusic(bytes));
+    } catch {
+      preview = '\u2014';
+    }
+
+    shown++;
+    const row = document.createElement('div');
+    row.className = 'scan-row';
+    row.innerHTML = `
+      <span class="scan-height">#${r.height}</span>
+      <span class="scan-hash">${r.hash}</span>
+      <span>${mode}</span>
+      <span class="scan-preview">${escapeHtml(preview)}</span>
+      <span class="scan-score">${score === null ? '\u2014' : score}</span>
+      <span class="scan-load"></span>
+    `;
+    const loadBtn = document.createElement('span');
+    loadBtn.className = 'chip';
+    loadBtn.textContent = 'Load';
+    loadBtn.addEventListener('click', () => {
+      hexInput.value = r.nonceHex;
+      decode();
+      resultSec.scrollIntoView({ behavior: 'smooth' });
+    });
+    row.querySelector('.scan-load').appendChild(loadBtn);
+    entries.push({ row, score });
+  });
+
+  if (scanSortScore.checked) {
+    // Highest score first; rows with no score (too few notes to judge)
+    // sort to the bottom regardless of sort order.
+    entries.sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
+  }
+
+  if (shown > 0) {
+    scanResults.appendChild(header);
+    entries.forEach(({ row }) => scanResults.appendChild(row));
+  }
+  return rows.length - shown;
+}
+
+const paneText = document.getElementById('pane-text');
+const paneMusic = document.getElementById('pane-music');
+document.querySelectorAll('#encode-tabs .tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('#encode-tabs .tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    const isText = tab.dataset.tab === 'text';
+    paneText.style.display = isText ? '' : 'none';
+    paneMusic.style.display = isText ? 'none' : '';
+  });
+});
+
+let textMode = 'base';
+document.querySelectorAll('#text-mode-tabs .tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('#text-mode-tabs .tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    textMode = tab.dataset.mode;
+    if (textMode === 'base') filterBaseInput();
+    updateTextCapacity();
+  });
+});
+
+const encTextInput = document.getElementById('enc-text-input');
+const textCapFill = document.getElementById('text-cap-fill');
+const textCapLabel = document.getElementById('text-cap-label');
+const textOutput = document.getElementById('text-output');
+
+// Base mode only supports printable ASCII (32-126) -- strip anything else
+// as the person types, rather than waiting until "Generate Memory" to
+// reject it. Cursor position is preserved.
+function filterBaseInput() {
+  if (textMode !== 'base') return;
+  const start = encTextInput.selectionStart;
+  const value = encTextInput.value;
+  const isValid = c => { const code = c.codePointAt(0); return code >= 32 && code <= 126; };
+  const filtered = Array.from(value).filter(isValid).join('');
+  if (filtered !== value) {
+    const removedBefore = Array.from(value.slice(0, start)).filter(c => !isValid(c)).length;
+    encTextInput.value = filtered;
+    const newPos = Math.max(0, start - removedBefore);
+    encTextInput.setSelectionRange(newPos, newPos);
+  }
+}
+
+function updateTextCapacity() {
+  const text = encTextInput.value;
+  if (textMode === 'utf8') {
+    const used = new TextEncoder().encode(text).length;
+    setCapacity(textCapFill, textCapLabel, used, 63, 'bytes (UTF-8 content)');
+  } else {
+    const used = Array.from(text).length;
+    setCapacity(textCapFill, textCapLabel, used, 64, 'characters (printable ASCII)');
+  }
+}
+encTextInput.addEventListener('input', () => { filterBaseInput(); updateTextCapacity(); });
+updateTextCapacity();
+
+document.getElementById('enc-text-btn').addEventListener('click', () => {
+  const text = encTextInput.value;
+  let bytes, capLabel;
+  try {
+    if (textMode === 'utf8') {
+      bytes = encodeUtf8Mode(text);
+      capLabel = `${new TextEncoder().encode(text).length} / 63 bytes used`;
+    } else {
+      bytes = encodeBaseText(text);
+      capLabel = `${Array.from(text).length} / 64 characters used`;
+    }
+  } catch (e) {
+    textOutput.style.display = '';
+    textOutput.innerHTML = `<div class="error-msg show" style="margin:0">${escapeHtml(e.message)}</div>`;
+    return;
+  }
+  const hex = bytesToHex(bytes);
+  textOutput.style.display = '';
+  textOutput.innerHTML = `
+    <div class="hexval">${hex}</div>
+    <div class="input-row" style="margin:0">
+      <span class="playback-info">${capLabel}</span>
+      <button class="btn" id="text-copy-btn">Copy to mine</button>
+      <button class="btn primary" id="text-load-btn">Decode &amp; Play \u2193</button>
+    </div>
+  `;
+  document.getElementById('text-copy-btn').addEventListener('click', (ev) => {
+    copyToClipboard(hex, ev.target);
+  });
+  document.getElementById('text-load-btn').addEventListener('click', () => {
+    hexInput.value = hex;
+    decode();
+    resultSec.scrollIntoView({ behavior: 'smooth' });
+  });
+});
+
+const STATE_LABELS = {
+  4: ['C2', 'C3', 'C4', 'C5', 'C6'],          // octave
+  5: DUR_NAME.map(s => s[0].toUpperCase() + s.slice(1)), // duration
+  6: DYN_NAME.map(s => s.toUpperCase()),       // dynamics
+  7: TEMPO_NAME,                               // tempo
+};
+
+let mEvents = [];
+let mState = { ...DEFAULTS };
+let mPending = { sharp: false, flat: false, natural: false, dotted: false, tie: false };
+
+// Build the four segmented state-controls (octave/duration/dynamics/tempo).
+document.querySelectorAll('#pane-music .state-group').forEach(group => {
+  const dim = Number(group.dataset.dim);
+  const seg = group.querySelector('.seg');
+  STATE_LABELS[dim].forEach((label, level) => {
+    const btn = document.createElement('div');
+    btn.className = 'seg-btn' + (level === DEFAULTS[dimKey(dim)] ? ' active' : '');
+    btn.textContent = label;
+    btn.dataset.level = level;
+    btn.addEventListener('click', () => {
+      const key = dimKey(dim);
+      if (mState[key] === level) return; // already current -- no-op
+      mState[key] = level;
+      mEvents.push({ type: 'state', dim, level });
+      seg.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', Number(b.dataset.level) === level));
+      refreshBuilder();
+    });
+    seg.appendChild(btn);
+  });
+});
+function dimKey(dim) {
+  return { 4: 'octave', 5: 'duration', 6: 'dynamics', 7: 'tempo' }[dim];
+}
+
+// Accidental toggles: none / sharp / flat / natural (mutually exclusive).
+const ACCIDENTALS = [
+  { key: null, label: '\u2014' },
+  { key: 'sharp', label: '\u266F' },
+  { key: 'flat', label: '\u266D' },
+  { key: 'natural', label: '\u266E' },
+];
+const accidentalGroup = document.getElementById('accidental-toggles');
+ACCIDENTALS.forEach(a => {
+  const btn = document.createElement('div');
+  btn.className = 'toggle-btn' + (a.key === null ? ' active' : '');
+  btn.textContent = a.label;
+  btn.addEventListener('click', () => {
+    mPending.sharp = mPending.flat = mPending.natural = false;
+    if (a.key) mPending[a.key] = true;
+    accidentalGroup.querySelectorAll('.toggle-btn').forEach((b, i) => b.classList.toggle('active', ACCIDENTALS[i].key === a.key));
+  });
+  accidentalGroup.appendChild(btn);
+});
+
+// Dot / tie toggles (independent).
+const modifierGroup = document.getElementById('modifier-toggles');
+[{ key: 'dotted', label: 'Dot \u00B7' }, { key: 'tie', label: 'Tie \u203F' }].forEach(m => {
+  const btn = document.createElement('div');
+  btn.className = 'toggle-btn';
+  btn.textContent = m.label;
+  btn.addEventListener('click', () => {
+    mPending[m.key] = !mPending[m.key];
+    btn.classList.toggle('active', mPending[m.key]);
+  });
+  modifierGroup.appendChild(btn);
+});
+
+// Pitch buttons C..B, plus Rest / Line break / Undo / Clear.
+const pitchRow = document.getElementById('pitch-row');
+for (let pitch = 1; pitch <= 7; pitch++) {
+  const btn = document.createElement('div');
+  btn.className = 'pitch-btn';
+  btn.textContent = PITCH_NAME[pitch];
+  btn.addEventListener('click', () => addNote(pitch));
+  pitchRow.appendChild(btn);
+}
+function addAction(label, fn) {
+  const btn = document.createElement('div');
+  btn.className = 'pitch-btn wide';
+  btn.textContent = label;
+  btn.addEventListener('click', fn);
+  pitchRow.appendChild(btn);
+}
+addAction('Rest', () => {
+  mEvents.push({ type: 'rest' });
+  refreshBuilder();
+});
+addAction('Line break', () => {
+  mEvents.push({ type: 'linebreak' });
+  refreshBuilder();
+});
+addAction('Undo', () => {
+  mEvents.pop();
+  recomputeState();
+  refreshBuilder();
+});
+addAction('Clear', () => {
+  mEvents = [];
+  recomputeState();
+  refreshBuilder();
+});
+
+function addNote(pitch) {
+  mEvents.push({
+    type: 'note', pitch,
+    sharp: mPending.sharp, flat: mPending.flat, natural: mPending.natural,
+    dotted: mPending.dotted, tie: mPending.tie,
+  });
+  // consume pending modifiers, matching the decoder's clear() after a note
+  mPending = { sharp: false, flat: false, natural: false, dotted: false, tie: false };
+  accidentalGroup.querySelectorAll('.toggle-btn').forEach((b, i) => b.classList.toggle('active', ACCIDENTALS[i].key === null));
+  modifierGroup.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+  refreshBuilder();
+}
+
+// Recompute mState (and the segmented-control highlights) by replaying all
+// state events from defaults -- used after Undo/Clear.
+function recomputeState() {
+  mState = { ...DEFAULTS };
+  mEvents.forEach(e => { if (e.type === 'state') mState[dimKey(e.dim)] = e.level; });
+  document.querySelectorAll('#pane-music .state-group').forEach(group => {
+    const dim = Number(group.dataset.dim);
+    const level = mState[dimKey(dim)];
+    group.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', Number(b.dataset.level) === level));
+  });
+}
+
+// Render the live "what this would decode to" preview, walking events with
+// the same resolved-state semantics as the decoder.
+const builderPreview = document.getElementById('builder-preview');
+function renderBuilderPreview(events) {
+  if (!events.length) {
+    builderPreview.innerHTML = '<span class="empty-hint">Add notes, rests, and state changes below — this preview shows what they\u2019ll decode to.</span>';
+    return;
+  }
+  let octave = DEFAULTS.octave, duration = DEFAULTS.duration, dynamics = DEFAULTS.dynamics;
+  let html = '';
+  events.forEach(e => {
+    if (e.type === 'note') {
+      const resolved = { ...e, octave, duration, dynamics };
+      html += `<span class="badge note">${noteLabel(resolved)} ${DUR_NAME[duration]} ${DYN_NAME[dynamics]}</span>`;
+    } else if (e.type === 'rest') {
+      html += `<span class="badge rest">rest ${DUR_NAME[duration]}</span>`;
+    } else if (e.type === 'linebreak') {
+      html += '<br>';
+    } else if (e.type === 'state') {
+      if (e.dim === Dim.OCTAVE) octave = e.level;
+      else if (e.dim === Dim.DURATION) duration = e.level;
+      else if (e.dim === Dim.DYNAMICS) dynamics = e.level;
+      let val;
+      if (e.dim === Dim.OCTAVE) val = 'C' + (e.level + 2);
+      else if (e.dim === Dim.DURATION) val = DUR_NAME[e.level];
+      else if (e.dim === Dim.DYNAMICS) val = DYN_NAME[e.level];
+      else val = TEMPO_NAME[e.level];
+      html += `<span class="badge state">${DIM_NAME[e.dim]} \u2192 ${val}</span>`;
+    }
+  });
+  builderPreview.innerHTML = html;
+}
+
+const musicCapFill = document.getElementById('music-cap-fill');
+const musicCapLabel = document.getElementById('music-cap-label');
+const musicOutput = document.getElementById('music-output');
+const encMusicBtn = document.getElementById('enc-music-btn');
+
+function refreshBuilder() {
+  renderBuilderPreview(mEvents);
+  const check = checkCanonicalMusic(mEvents);
+  const shown = Math.min(check.nibbleCount, MUSIC_NIBBLES);
+  setCapacity(musicCapFill, musicCapLabel, shown, MUSIC_NIBBLES, 'nibbles');
+  if (!check.ok) {
+    musicCapLabel.textContent = check.error;
+    musicCapLabel.classList.add('full');
+  }
+  encMusicBtn.disabled = !check.ok;
+  musicOutput.style.display = 'none';
+}
+
+// Lenient ("pitches only") fallback
+// For text that isn't in our score-text grammar at all -- e.g. pasted
+// from some other notation with bar numbers, time signatures, chords, or
+// real Unicode music glyphs -- there's no general way to parse "any
+// standard notation" (there isn't one standard, and free-form text like
+// that has no fixed grammar). Instead, fall back to scanning for
+// Scientific-Pitch-Notation-like tokens (<pitch><accidental?><octave
+// digit>, e.g. "E5", "D#5", "A2") anywhere in the text, ignoring
+// everything else. Octaves outside this format's C2-C6 range are clamped.
+// Duration/dynamics/tempo can't be recovered this way, so every note
+// becomes the default quarter note at a constant duration -- this is a
+// one-way, lossy "pitch skeleton", not a transcription.
+const SUBSCRIPT_DIGITS = { '\u2080':'0','\u2081':'1','\u2082':'2','\u2083':'3','\u2084':'4','\u2085':'5','\u2086':'6','\u2087':'7','\u2088':'8','\u2089':'9' };
+
+function parseScoreTextLenient(text) {
+  const s = text
+    // Octave numbers are sometimes written as Unicode subscripts (E\u2085 = E5).
+    .replace(/[\u2080-\u2089]/g, ch => SUBSCRIPT_DIGITS[ch])
+    // Strip the Unicode "Musical Symbols" block (clefs, barlines, note
+    // heads/flags, etc.) and standalone note-duration glyphs -- but keep
+    // \u266D/\u266E/\u266F (flat/natural/sharp), which are valid accidentals here.
+    .replace(/[\u{1D100}-\u{1D1FF}]/gu, ' ')
+    .replace(/[\u2669-\u266C]/g, ' ');
+
+  const tracked = { octave: DEFAULTS.octave };
+  const events = [];
+  let clamped = 0;
+  const re = /([A-G])([#\u266F\u266Db\u266En]?)([0-9])/g;
+  let m;
+  while ((m = re.exec(s))) {
+    const pitch = PITCH_FROM_LETTER[m[1]];
+    const acc = m[2];
+    const sharp = acc === '#' || acc === '\u266F';
+    const flat = acc === 'b' || acc === '\u266D';
+    const natural = acc === 'n' || acc === '\u266E';
+    let oct = Number(m[3]);
+    if (oct < 2) { oct = 2; clamped++; }
+    else if (oct > 6) { oct = 6; clamped++; }
+    const octave = oct - 2;
+
+    if (octave !== tracked.octave) {
+      events.push({ type: 'state', dim: Dim.OCTAVE, level: octave });
+      tracked.octave = octave;
+    }
+    events.push({ type: 'note', pitch, sharp, flat, natural, dotted: false, tie: false });
+  }
+  return { events, noteCount: events.filter(e => e.type === 'note').length, clamped };
+}
+
+// Score text Import / Export / Copy
+const scoreTextArea = document.getElementById('score-text-area');
+const scoreTextError = document.getElementById('score-text-error');
+const scoreExportFormat = document.getElementById('score-export-format');
+
+document.getElementById('score-import-btn').addEventListener('click', () => {
+  scoreTextError.classList.remove('show', 'notice');
+  const text = scoreTextArea.value;
+  if (!text.trim()) { scoreTextError.textContent = 'Nothing to import.'; scoreTextError.classList.add('show'); return; }
+
+  let parsed;
+  try {
+    parsed = parseScoreText(text);
+    if (!parsed.length) throw new Error('No notes, rests, or state changes found.');
+  } catch (strictErr) {
+    // Not our grammar (or empty) -- fall back to scanning for SPN-like
+    // pitch tokens (e.g. "E5", "D#5") anywhere in the text, ignoring
+    // everything else. Lossy: rhythm/dynamics/tempo are not recovered.
+    const lenient = parseScoreTextLenient(text);
+    if (!lenient.noteCount) {
+      scoreTextError.textContent = strictErr.message;
+      scoreTextError.classList.add('show');
+      return;
+    }
+    parsed = lenient.events;
+    let msg = `Strict parse failed (${strictErr.message}) \u2014 fell back to pitch-only extraction: found ${lenient.noteCount} note${lenient.noteCount === 1 ? '' : 's'}. Rhythm, dynamics, and tempo were not recovered (all set to quarter notes at default level).`;
+    if (lenient.clamped) msg += ` ${lenient.clamped} note${lenient.clamped === 1 ? '' : 's'} had an octave outside C2-C6 and ${lenient.clamped === 1 ? 'was' : 'were'} clamped.`;
+    scoreTextError.textContent = msg;
+    scoreTextError.classList.add('show', 'notice');
+  }
+
+  mEvents = parsed;
+  recomputeState();
+  refreshBuilder();
+});
+
+document.getElementById('score-export-btn').addEventListener('click', () => {
+  scoreTextError.classList.remove('show', 'notice');
+  if (!mEvents.length) { scoreTextError.textContent = 'Nothing to export yet \u2014 add notes below first.'; scoreTextError.classList.add('show'); return; }
+  scoreTextArea.value = exportScoreText(mEvents, scoreExportFormat.value);
+});
+
+document.getElementById('score-copy-btn').addEventListener('click', (ev) => {
+  if (!scoreTextArea.value.trim()) { scoreTextError.textContent = 'Nothing to copy.'; scoreTextError.classList.remove('notice'); scoreTextError.classList.add('show'); return; }
+  scoreTextError.classList.remove('show', 'notice');
+  copyToClipboard(scoreTextArea.value, ev.target);
+});
+
+encMusicBtn.addEventListener('click', () => {
+  let bytes;
+  try {
+    bytes = encodeMusic(mEvents);
+  } catch (e) {
+    musicOutput.style.display = '';
+    musicOutput.innerHTML = `<div class="error-msg show" style="margin:0">${escapeHtml(e.message)}</div>`;
+    return;
+  }
+  const hex = bytesToHex(bytes);
+  const used = checkCanonicalMusic(mEvents).nibbleCount;
+  musicOutput.style.display = '';
+  musicOutput.innerHTML = `
+    <div class="hexval">${hex}</div>
+    <div class="input-row" style="margin:0">
+      <span class="playback-info">${mEvents.length} event${mEvents.length === 1 ? '' : 's'} \u00b7 ${used} / ${MUSIC_NIBBLES} nibbles</span>
+      <button class="btn" id="music-copy-btn">Copy to mine</button>
+      <button class="btn primary" id="music-load-btn">Decode &amp; Play \u2193</button>
+    </div>
+  `;
+  document.getElementById('music-copy-btn').addEventListener('click', (ev) => {
+    copyToClipboard(hex, ev.target);
+  });
+  document.getElementById('music-load-btn').addEventListener('click', () => {
+    hexInput.value = hex;
+    decode();
+    resultSec.scrollIntoView({ behavior: 'smooth' });
+  });
+});
+
+refreshBuilder();
+
+// Show a worked example on first load.
+window.addEventListener('load', () => {
+  hexInput.value = EXAMPLES[0].hex;
+  decode();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memcoin Network Monitor</title>
+<style>
+
+  :root[data-theme="light"] {
+    --bg:           #ebebea;
+    --border:       #d0d0ce;
+    --border-light: #dadad8;
+    --ink:          #111112;
+    --ink-mid:      #484850;
+    --ink-dim:      #909098;
+    --ink-faint:    #c0c0c8;
+    --sans: "Century Gothic", "Avant Garde", Futura, "Trebuchet MS", Cantarell, sans-serif;
+    --mono: "IBM Plex Mono", "SF Mono", Menlo, Consolas, monospace;
+    --col-primary:   #111112;
+    --col-secondary: #404050;
+    --col-dim:       #808090;
+  }
+
+  :root[data-theme="dark"] {
+    --bg:           #111009;
+    --border:       #2a2518;
+    --border-light: #1e1c12;
+    --ink:          #f0d898;
+    --ink-mid:      #a88a50;
+    --ink-dim:      #5a4a28;
+    --ink-faint:    #302a18;
+    --sans: "Century Gothic", "Avant Garde", Futura, "Trebuchet MS", Cantarell, sans-serif;
+    --mono: "IBM Plex Mono", "SF Mono", Menlo, Consolas, monospace;
+    --col-primary:   #f4c84a;
+    --col-secondary: #c8902a;
+    --col-dim:       #785820;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    min-height: 100vh;
+    padding: 36px 28px;
+    transition: background 0.3s, color 0.3s;
+  }
+
+  .wrap { max-width: 960px; margin: 0 auto; }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 20px;
+    margin-bottom: 40px;
+  }
+
+  .logo { display: flex; align-items: center; }
+  .logo-m   { font-size: 18px; font-weight: 400; color: #888480; line-height: 1; }
+  .logo-sep { color: #32302b; font-weight: 200; font-size: 16px; margin: 0 10px; }
+  .logo-sub { font-size: 10px; letter-spacing: 2px; color: #444240; font-weight: 300; }
+
+  #theme-toggle {
+    font-size: 10px; font-weight: 300;
+    letter-spacing: 2px; text-transform: uppercase;
+    color: var(--ink-faint);
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.3s;
+  }
+  #theme-toggle:hover { color: var(--ink-dim); }
+
+  #sound-toggle {
+    font-size: 10px; font-weight: 300;
+    letter-spacing: 2px; text-transform: uppercase;
+    color: var(--ink-faint);
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.3s;
+  }
+  #sound-toggle:hover { color: var(--ink-dim); }
+
+  .grid-top {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    margin-bottom: 36px;
+  }
+  .grid-blocks { margin-bottom: 36px; }
+
+  .panel { padding: 0 24px 0 0; }
+
+  .panel-label {
+    font-size: 9px; font-weight: 400;
+    color: var(--ink-faint);
+    letter-spacing: 3px; text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .panel-value {
+    font-family: var(--sans);
+    font-weight: 300; font-size: 32px;
+    color: var(--ink);
+    line-height: 1; letter-spacing: -0.5px;
+    transition: opacity 0.2s;
+  }
+  .panel-value.large { font-size: 38px; }
+  .panel-value.small { font-size: 16px; font-weight: 300; line-height: 1.6; letter-spacing: 0; }
+
+  .panel-sub {
+    font-size: 10px; font-weight: 300;
+    color: var(--ink-dim);
+    margin-top: 6px; letter-spacing: 1px;
+  }
+
+  .blocks-header {
+    font-size: 9px; font-weight: 400;
+    color: var(--ink-faint);
+    letter-spacing: 3px; text-transform: uppercase;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 72px 1fr 120px 60px;
+    gap: 12px;
+  }
+
+  .block-row {
+    display: grid;
+    grid-template-columns: 72px 1fr 120px 60px;
+    gap: 12px;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--border-light);
+    font-size: 12px; font-weight: 300;
+    color: var(--ink-mid);
+    animation: rowIn 0.3s ease;
+    animation-fill-mode: both;
+  }
+  .block-row:last-child { border-bottom: none; }
+
+  @keyframes rowIn {
+    from { opacity: 0; transform: translateY(-3px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .block-height { font-weight: 400; color: var(--ink-mid); }
+  .block-memory {
+    display: flex; align-items: center; gap: 6px;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .block-memory.row-expanded {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    overflow: visible;
+  }
+  .block-memory-text {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    color: var(--ink-dim);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    line-height: 1.2;
+  }
+  .block-memory-text .sym { color: var(--ink-faint); }
+  .block-time   { text-align: right; }
+  .block-txs    { text-align: right; color: var(--ink-mid); }
+
+  .empty-hint { color: var(--ink-faint); font-style: italic; font-size: 11px; }
+
+  .block-memory-text.notelist {
+    display: inline-flex;
+    align-items: flex-end;
+    flex: 1 1 auto;
+    height: 1.2em;
+    overflow: hidden;
+    cursor: pointer;
+    letter-spacing: 0;
+    vertical-align: bottom;
+  }
+  .block-memory-text.notelist:hover { color: var(--ink-mid); }
+  .block-memory-text.notelist.notes-inline {
+    flex: 0 1 auto;
+    max-width: 45%;
+  }
+  .block-memory-text.notelist.expanded {
+    flex: 1 1 100%;
+    max-width: none;
+    overflow: visible;
+    flex-wrap: wrap;
+    height: auto;
+    align-content: flex-start;
+    row-gap: 2px;
+  }
+  .note-chip {
+    display: inline-block;
+    flex: 0 0 auto;
+    height: 0;
+    margin-right: 2px;
+    margin-bottom: 0;
+    border-bottom: 2px solid var(--note-color, var(--ink-dim));
+    border-radius: 1px;
+    transition: border-color 0.08s;
+  }
+  .note-chip.rest {
+    border-bottom-style: dashed;
+  }
+  .note-chip.tie { margin-left: -2px; }
+  .note-chip.playing {
+    border-bottom-color: var(--note-color-play, var(--col-primary)) !important;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+
+  .refresh-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 28px; padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 10px; font-weight: 300;
+    color: var(--ink-faint);
+    letter-spacing: 1.5px; text-transform: uppercase;
+  }
+
+  .poll-dots {
+    display: flex; gap: 6px; align-items: center;
+  }
+  .poll-dot {
+    width: 5px; height: 5px;
+    background: var(--border);
+    transition: background 0.2s ease;
+  }
+  .poll-dot.lit { background: var(--ink-dim); }
+  [data-theme="light"] .poll-dot.update.lit { background: #404058; }
+  [data-theme="dark"]  .poll-dot.update.lit { background: #7a5c28; }
+
+  @media (max-width: 700px) {
+    .grid-top { grid-template-columns: 1fr 1fr; row-gap: 28px; }
+    .blocks-header, .block-row { grid-template-columns: 60px 1fr 100px; }
+    .block-txs { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="logo">
+      <span class="logo-m">𝕄</span>
+      <span class="logo-sep">/</span>
+      <span class="logo-sub">network monitor</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:18px">
+      <span id="sound-toggle">Music Box</span>
+      <span id="theme-toggle">Light</span>
+    </div>
+  </header>
+
+  <div class="grid-top">
+    <div class="panel">
+      <div class="panel-label">Block Height</div>
+      <div class="panel-value large" id="blocks" style="color:var(--col-primary)">—</div>
+    </div>
+    <div class="panel">
+      <div class="panel-label">Hashrate</div>
+      <div class="panel-value" id="hashrate" style="color:var(--col-secondary)">—</div>
+    </div>
+    <div class="panel">
+      <div class="panel-label">Difficulty</div>
+      <div class="panel-value" id="difficulty" style="color:var(--col-secondary)">—</div>
+    </div>
+    <div class="panel">
+      <div class="panel-label">Mempool</div>
+      <div class="panel-value" id="mempool-count" style="color:var(--col-dim)">—</div>
+    </div>
+  </div>
+
+  <div class="grid-blocks">
+    <div class="panel-label" style="margin-bottom:14px">Recent Blocks</div>
+    <div class="blocks-header">
+      <span>Height</span>
+      <span>Nonce</span>
+      <span style="text-align:right">Time</span>
+      <span style="text-align:right">Txs</span>
+    </div>
+    <div id="blocks-list"></div>
+  </div>
+
+  <div class="refresh-bar">
+    <span id="last-update">—</span>
+    <div class="poll-dots">
+      <div class="poll-dot" id="dot-0"></div>
+      <div class="poll-dot" id="dot-1"></div>
+      <div class="poll-dot" id="dot-2"></div>
+      <div class="poll-dot" id="dot-3"></div>
+      <div class="poll-dot" id="dot-4"></div>
+      <div class="poll-dot update" id="dot-update"></div>
+    </div>
+  </div>
+
+</div>
+<script>
+// Theme
+const root   = document.documentElement;
+const toggle = document.getElementById('theme-toggle');
+let soundMode = 'musicbox'; // 'musicbox' | 'chime' -- Found Melody playback voicing
+
+(function init() {
+  const saved = localStorage.getItem('mem-theme') || 'light';
+  root.dataset.theme = saved;
+  toggle.textContent = saved === 'light' ? 'Light' : 'Night';
+})();
+
+toggle.addEventListener('click', () => {
+  const next = root.dataset.theme === 'light' ? 'dark' : 'light';
+  root.dataset.theme = next;
+  toggle.textContent = next === 'light' ? 'Light' : 'Night';
+  localStorage.setItem('mem-theme', next);
+  if (S.knownBlocks.length) renderBlocks(); // note-chip colors are theme-dependent
+});
+
+const MUSIC_MODE = 129;
+const UTF8_MODE  = 128;
+const MUSIC_NIBBLES = 126;
+const Dim = { OCTAVE: 4, DURATION: 5, DYNAMICS: 6, TEMPO: 7 };
+
+const INLINE_STATE = {
+  9:  [Dim.OCTAVE,   2],
+  10: [Dim.DURATION, 2],
+  11: [Dim.DURATION, 3],
+  12: [Dim.DURATION, 1],
+  13: [Dim.OCTAVE,   4],
+  14: [Dim.OCTAVE,   0],
+  15: [Dim.DYNAMICS, 2],
+};
+const DEFAULTS = { octave: 2, duration: 2, dynamics: 2, tempo: 2 };
+
+function nibbleByteIndex(j) { return 62 - (j >> 1); }
+function readNibble(nonce, j) {
+  const b = nonce[nibbleByteIndex(j)];
+  return (j & 1) === 0 ? (b >> 4) & 0xF : b & 0xF;
+}
+
+function decodeMusic(nonce) {
+  let { octave, duration, dynamics, tempo } = DEFAULTS;
+  let pending = { sharp: false, flat: false, natural: false, dotted: false, tie: false };
+  const clear = () => { for (const k in pending) pending[k] = false; };
+
+  const events = [];
+  let j = 0;
+  while (j < MUSIC_NIBBLES) {
+    const s = readNibble(nonce, j); j++;
+    if (s === 0) {
+      events.push({ type: 'rest', duration, dynamics });
+      clear();
+    } else if (s >= 1 && s <= 7) {
+      events.push({
+        type: 'note', pitch: s, octave, duration, dynamics,
+        sharp: pending.sharp, flat: pending.flat, natural: pending.natural,
+        dotted: pending.dotted, tie: pending.tie,
+      });
+      clear();
+    } else if (s >= 9 && s <= 15) {
+      const [dim, level] = INLINE_STATE[s];
+      if (dim === Dim.OCTAVE) octave = level;
+      else if (dim === Dim.DURATION) duration = level;
+      else if (dim === Dim.DYNAMICS) dynamics = level;
+      else if (dim === Dim.TEMPO) tempo = level;
+      events.push({ type: 'state', dim, level });
+    } else {
+      if (j >= MUSIC_NIBBLES) break;
+      const sel = readNibble(nonce, j); j++;
+      if (sel === 0) {
+        break;
+      } else if (sel === 1) {
+        pending.sharp = true; pending.flat = false; pending.natural = false;
+      } else if (sel === 2) {
+        pending.flat = true; pending.sharp = false; pending.natural = false;
+      } else if (sel === 10) {
+        pending.natural = true; pending.sharp = false; pending.flat = false;
+      } else if (sel === 3) {
+        pending.dotted = true;
+      } else if (sel === 11) {
+        pending.tie = true;
+      } else if (sel === 8) {
+        clear();
+      } else if (sel === 9) {
+        events.push({ type: 'linebreak' });
+      } else if (sel >= 4 && sel <= 7) {
+        if (j >= MUSIC_NIBBLES) break;
+        const arg = readNibble(nonce, j); j++;
+        const level = Math.min(arg, 4);
+        const dim = sel;
+        if (dim === Dim.OCTAVE) octave = level;
+        else if (dim === Dim.DURATION) duration = level;
+        else if (dim === Dim.DYNAMICS) dynamics = level;
+        else if (dim === Dim.TEMPO) tempo = level;
+        events.push({ type: 'state', dim, level });
+      } else {
+        break;
+      }
+    }
+  }
+  return events;
+}
+
+function decodeBase(nonce) {
+  let { octave, duration, dynamics, tempo } = DEFAULTS;
+  let pending = { sharp: false, flat: false, dotted: false };
+  const clear = () => { pending.sharp = false; pending.flat = false; pending.dotted = false; };
+
+  const events = [];
+  let i = 63;
+  while (i >= 0) {
+    const b = nonce[i]; i--;
+    if (b === 0) {
+      let allZero = true;
+      for (let k = i; k >= 0; k--) { if (nonce[k] !== 0) { allZero = false; break; } }
+      if (allZero) break;
+      events.push({ type: 'rest', duration, dynamics });
+      clear();
+    } else if (b >= 1 && b <= 7) {
+      events.push({
+        type: 'note', pitch: b, octave, duration, dynamics,
+        sharp: pending.sharp, flat: pending.flat, natural: false,
+        dotted: pending.dotted, tie: false,
+      });
+      clear();
+    } else if (b >= 8 && b <= 12) {
+      octave = b - 8;
+      events.push({ type: 'state', dim: Dim.OCTAVE, level: octave });
+    } else if (b >= 13 && b <= 17) {
+      duration = b - 13;
+      events.push({ type: 'state', dim: Dim.DURATION, level: duration });
+    } else if (b >= 18 && b <= 22) {
+      dynamics = b - 18;
+      events.push({ type: 'state', dim: Dim.DYNAMICS, level: dynamics });
+    } else if (b === 23) {
+      pending.sharp = true; pending.flat = false;
+    } else if (b === 24) {
+      pending.flat = true; pending.sharp = false;
+    } else if (b >= 25 && b <= 29) {
+      tempo = b - 25;
+      events.push({ type: 'state', dim: Dim.TEMPO, level: tempo });
+    } else if (b === 30) {
+      pending.dotted = true;
+    } else if (b === 31) {
+      clear();
+    } else if (b >= 32 && b <= 126) {
+      events.push({ type: 'text', ch: String.fromCharCode(b) });
+      clear();
+    } else if (b === 127) {
+      events.push({ type: 'linebreak' });
+    }
+  }
+  return events;
+}
+
+function decodeUtf8(nonce) {
+  const raw = [];
+  let i = 62;
+  while (i >= 0) {
+    const b = nonce[i];
+    if (b === 0x00) break;
+    raw.push(b);
+    i--;
+  }
+  return new TextDecoder('utf-8', { fatal: false }).decode(new Uint8Array(raw));
+}
+
+function decodeNonce(nonce) {
+  if (nonce.length !== 64) throw new Error('nonce must be 64 bytes');
+  const head = nonce[63];
+  if (head <= 127) return { mode: 'base', events: decodeBase(nonce) };
+  if (head === UTF8_MODE) return { mode: 'utf8', text: decodeUtf8(nonce) };
+  if (head === MUSIC_MODE) return { mode: 'music', events: decodeMusic(nonce) };
+  return { mode: 'reserved', head };
+}
+
+function hexToBytes(hex) {
+  const clean = hex.trim().replace(/\s+/g, '').replace(/^0x/i, '');
+  if (clean.length !== 128) throw new Error(`Expected 128 hex characters (64 bytes), got ${clean.length}.`);
+  if (!/^[0-9a-fA-F]+$/.test(clean)) throw new Error('Not valid hexadecimal.');
+  const out = new Uint8Array(64);
+  for (let i = 0; i < 64; i++) out[i] = parseInt(clean.substr(i * 2, 2), 16);
+  return out;
+}
+
+// Music theory helpers
+const PITCH_NAME = { 1: 'C', 2: 'D', 3: 'E', 4: 'F', 5: 'G', 6: 'A', 7: 'B' };
+const PITCH_SEMITONE = { 1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11 };
+const DUR_BEATS = [4, 2, 1, 0.5, 0.25];
+const DYN_GAIN  = [0.06, 0.14, 0.30, 0.55, 0.85];
+const TEMPO_BPM  = [50, 76, 108, 138, 176];
+
+const NOTE_HUE        = 120;
+const NOTE_LIGHTNESS  = { light: 70, dark: 30 };
+const NOTE_SATURATION = [3, 5, 8, 11, 15]; // by dynamics 0-4
+const NOTE_ACCIDENTAL_SAT_MULT = 0.35;
+
+const PITCH_OFFSET_BASE = 1;
+const PITCH_OFFSET_STEP = 0.8;
+function notePitchOffset(pitch) {
+  return PITCH_OFFSET_BASE + (pitch - 1) * PITCH_OFFSET_STEP;
+}
+
+function currentNoteTheme() {
+  return root.dataset.theme === 'dark' ? 'dark' : 'light';
+}
+
+function noteColor(dynamics, accidental) {
+  const theme = currentNoteTheme();
+  const light = NOTE_LIGHTNESS[theme];
+  let   sat   = NOTE_SATURATION[dynamics];
+  if (accidental) sat *= NOTE_ACCIDENTAL_SAT_MULT;
+
+  const color = `hsl(${NOTE_HUE}, ${sat.toFixed(0)}%, ${light}%)`;
+
+  const satPlay   = Math.min(60, sat * 1.8 + 15);
+  const lightPlay = theme === 'light'
+    ? Math.max(16, light - 14)
+    : Math.min(82, light + 14);
+  const colorPlay = `hsl(${NOTE_HUE}, ${satPlay.toFixed(0)}%, ${lightPlay}%)`;
+
+  return { color, colorPlay };
+}
+
+function noteMidi(n) {
+  const oct = n.octave + 2;
+  let semis = PITCH_SEMITONE[n.pitch];
+  if (n.sharp) semis += 1;
+  if (n.flat) semis -= 1;
+  return 12 * (oct + 1) + semis;
+}
+function freqFromMidi(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+
+// Found Melody
+// decodeMusic is a total function: it can read ANY 64-byte field as
+// packed-music nibbles, regardless of what nonce[63] actually says. This
+// view always treats the field this way -- it never distinguishes an
+// intentionally composed melody from incidental bytes. Octave-shift state
+// changes are stripped and every note's octave is pinned to the default,
+// so the result stays within about one octave (calm) while duration/
+// dynamics/tempo variation -- and any accidentals -- are left untouched
+// (still expressive).
+function neutralizeOctave(events) {
+  return events
+    .filter(e => !(e.type === 'state' && e.dim === Dim.OCTAVE))
+    .map(e => e.type === 'note' ? { ...e, octave: DEFAULTS.octave } : e);
+}
+
+function extractMusicLines(events) {
+  const lines = [[]];
+  events.forEach(e => {
+    if (e.type === 'linebreak') {
+      lines.push([]);
+    } else if (e.type === 'note' || e.type === 'rest' || e.type === 'state') {
+      lines[lines.length - 1].push(e);
+    }
+  });
+  return lines.filter(line => line.length > 0);
+}
+
+// Found Melody note list
+// Walk the (octave-neutralized) events in order, tracking the current
+// tempo level (the only state dimension not already baked into each
+// note's own fields), and keep only note/rest events with that tempo
+// attached.
+function annotateTempo(events) {
+  let tempo = DEFAULTS.tempo;
+  const out = [];
+  events.forEach(e => {
+    if (e.type === 'state' && e.dim === Dim.TEMPO) tempo = e.level;
+    else if (e.type === 'note' || e.type === 'rest') out.push({ ...e, tempo });
+  });
+  return out;
+}
+
+function renderNoteList(musicLines) {
+  const seq = annotateTempo(musicLines.flat());
+  if (!seq.length) return '<span class="empty-hint">(no notes)</span>';
+  return seq.map(e => {
+    const beats = DUR_BEATS[e.duration] * (e.dotted ? 1.5 : 1);
+    const width = (8 + Math.min(beats, 4) / 4 * 22).toFixed(1);
+    const borderWidth = 1 + e.tempo;
+    const classes = ['note-chip'];
+    let lift = 0;
+    let accidental = false;
+    if (e.type === 'rest') {
+      classes.push('rest');
+    } else {
+      accidental = !!(e.sharp || e.flat || e.natural);
+      if (e.tie) classes.push('tie');
+      lift = notePitchOffset(e.pitch);
+    }
+    const { color, colorPlay } = noteColor(e.dynamics, accidental);
+    const style = `width:${width}px;border-bottom-width:${borderWidth}px;margin-bottom:${lift.toFixed(1)}px;--note-color:${color};--note-color-play:${colorPlay};`;
+    return `<span class="${classes.join(' ')}" style="${style}"></span>`;
+  }).join('');
+}
+
+let audioCtx = null;
+
+// Found Melody playback voicings
+// Each voicing is additive partials over a base oscillator type, shaped
+// by one of a few generic envelope "shapes":
+//   - 'ping'   : sharp attack, decays partway, holds until the note's
+//                nominal end, then rings out (Music Box)
+//   - 'strike' : sharp attack, then a single decay to silence,
+//                independent of the note's nominal duration -- bells/
+//                percussion ring as long as they ring, not as long as
+//                the "note" lasts (Chime, Glass, Marimba)
+//   - 'adsr'   : attack -> decay to a sustain level -> hold until the
+//                note ends -> release (8-Bit)
+//   - 'pad'    : slow attack -> hold at full level -> slow release
+//                after the note ends (Pad)
+const TIMBRES = {
+  musicbox: {
+    label: 'Music Box',
+    oscType: 'sine',
+    partials: [[1, 1.00], [2.01, 0.40], [3.02, 0.16], [4.98, 0.07]],
+    envelope: 'ping',
+    attack: 0.003, pingDecay: 0.09, pingLevel: 0.38, sustainLevel: 0.08, ring: 0.28,
+    gainScale: 1,
+  },
+  chime: {
+    label: 'Chime',
+    oscType: 'sine',
+    // Tubular-bell-ish inharmonic ratios -- NOT simple integer multiples
+    // of the fundamental, which is where the "shimmer" comes from.
+    partials: [[1, 1.00], [2.76, 0.55], [5.40, 0.32], [8.93, 0.18], [13.34, 0.10]],
+    envelope: 'strike',
+    attack: 0.025, ring: 2.4,
+    gainScale: 0.6, // long overlapping tails -- keep headroom
+  },
+  glass: {
+    label: 'Glass',
+    oscType: 'sine',
+    // Same inharmonic family as Chime but brighter (more high-partial
+    // energy) and much shorter -- a quick glassy "ping" rather than a
+    // long shimmer.
+    partials: [[1, 1.00], [2.76, 0.50], [5.40, 0.45], [8.93, 0.35], [13.34, 0.20], [18.0, 0.10]],
+    envelope: 'strike',
+    attack: 0.002, ring: 0.55,
+    gainScale: 0.7,
+  },
+  marimba: {
+    label: 'Marimba',
+    oscType: 'sine',
+    // Strong fundamental plus the quiet high overtone that gives struck
+    // wooden bars their "woody" ring.
+    partials: [[1, 1.00], [3.93, 0.18], [9.4, 0.04]],
+    envelope: 'strike',
+    attack: 0.002, ring: 0.30,
+    // Struck bars dip slightly in pitch right after the attack.
+    pitchDrop: 0.06, pitchDropTime: 0.04,
+    gainScale: 0.9,
+  },
+  vibraphone: {
+    label: 'Vibraphone',
+    oscType: 'sine',
+    // Same overtone family as Marimba (metal bars over resonator tubes
+    // share the same "fundamental + high quiet overtone" shape), but the
+    // tubes give a much longer ring, and a slow amplitude tremolo is the
+    // instrument's signature shimmer.
+    partials: [[1, 1.00], [3.93, 0.15], [9.4, 0.03]],
+    envelope: 'strike',
+    attack: 0.004, ring: 1.8,
+    tremolo: { rate: 4.5, depth: 0.35 },
+    gainScale: 0.7,
+  },
+  chiptune: {
+    label: '8-Bit',
+    oscType: 'square', // square wave's own harmonics give the "buzzy" character
+    partials: [[1, 1.00]],
+    envelope: 'adsr',
+    attack: 0.002, decay: 0.04, sustainLevel: 0.5, release: 0.04,
+    gainScale: 0.35,
+  },
+  strings: {
+    label: 'Strings',
+    oscType: 'sawtooth', // already harmonically rich -- a single voice is enough
+    partials: [[1, 1.00]],
+    envelope: 'adsr',
+    attack: 0.008, decay: 0.12, sustainLevel: 0.35, release: 0.10,
+    detuneCents: 6, // two slightly-detuned saws -- a small "section" of players
+    gainScale: 0.28, // sawtooth is harmonically dense -- needs the most headroom
+  },
+  organ: {
+    label: 'Organ',
+    oscType: 'sine',
+    // Drawbar-style: a stack of integer harmonics at fixed levels,
+    // sustained for as long as the note is held -- no natural decay.
+    partials: [[1, 1.00], [2, 0.50], [3, 0.33], [4, 0.25], [5, 0.18], [6, 0.12]],
+    envelope: 'pad',
+    attack: 0.012, release: 0.06,
+    detuneCents: 3, // subtle beating between drawbars, like a real organ
+    gainScale: 0.4,
+  },
+  pad: {
+    label: 'Pad',
+    oscType: 'sine',
+    partials: [[1, 1.00], [2, 0.45], [3, 0.15]],
+    envelope: 'pad',
+    attack: 0.35, release: 0.5,
+    detuneCents: 5, // two voices per partial, detuned for a soft chorus
+    gainScale: 0.45,
+  },
+};
+const SOUND_MODES = Object.keys(TIMBRES);
+
+// Sound mode (Found Melody playback voicing)
+const soundToggle = document.getElementById('sound-toggle');
+
+(function initSound() {
+  const saved = localStorage.getItem('mem-sound');
+  soundMode = TIMBRES[saved] ? saved : 'musicbox';
+  soundToggle.textContent = TIMBRES[soundMode].label;
+})();
+
+soundToggle.addEventListener('click', () => {
+  const idx = SOUND_MODES.indexOf(soundMode);
+  soundMode = SOUND_MODES[(idx + 1) % SOUND_MODES.length];
+  soundToggle.textContent = TIMBRES[soundMode].label;
+  localStorage.setItem('mem-sound', soundMode);
+});
+
+function playNote(freq, peakGain, t0, t1) {
+  const cfg = TIMBRES[soundMode] || TIMBRES.musicbox;
+  const env = audioCtx.createGain();
+  env.connect(audioCtx.destination);
+
+  const gain = peakGain * (cfg.gainScale ?? 1);
+  let stopAt;
+
+  switch (cfg.envelope) {
+    case 'ping': {
+      const { attack, pingDecay, pingLevel, sustainLevel, ring } = cfg;
+      env.gain.setValueAtTime(0.0001, t0);
+      env.gain.exponentialRampToValueAtTime(gain, t0 + attack);
+      env.gain.exponentialRampToValueAtTime(Math.max(gain * pingLevel, 0.0001), t0 + attack + pingDecay);
+      env.gain.exponentialRampToValueAtTime(Math.max(gain * sustainLevel, 0.0001), t1);
+      env.gain.exponentialRampToValueAtTime(0.0001, t1 + ring);
+      stopAt = t1 + ring + 0.05;
+      break;
+    }
+    case 'strike': {
+      const { attack, ring } = cfg;
+      env.gain.setValueAtTime(0.0001, t0);
+      env.gain.exponentialRampToValueAtTime(gain, t0 + attack);
+      env.gain.exponentialRampToValueAtTime(0.0001, t0 + ring);
+      stopAt = t0 + ring + 0.05;
+      break;
+    }
+    case 'adsr': {
+      const { attack, decay, sustainLevel, release } = cfg;
+      const decayEnd = t0 + attack + decay;
+      const releaseStart = Math.max(decayEnd, t1 - release);
+      const sustainGain = Math.max(gain * sustainLevel, 0.0001);
+      env.gain.setValueAtTime(0.0001, t0);
+      env.gain.exponentialRampToValueAtTime(gain, t0 + attack);
+      env.gain.exponentialRampToValueAtTime(sustainGain, decayEnd);
+      env.gain.setValueAtTime(sustainGain, releaseStart);
+      env.gain.exponentialRampToValueAtTime(0.0001, releaseStart + release);
+      stopAt = releaseStart + release + 0.05;
+      break;
+    }
+    case 'pad': {
+      const { attack, release } = cfg;
+      const peakAt = t0 + attack;
+      const releaseStart = Math.max(peakAt, t1 - release);
+      env.gain.setValueAtTime(0.0001, t0);
+      env.gain.exponentialRampToValueAtTime(gain, peakAt);
+      env.gain.setValueAtTime(gain, releaseStart);
+      env.gain.exponentialRampToValueAtTime(0.0001, releaseStart + release);
+      stopAt = releaseStart + release + 0.05;
+      break;
+    }
+  }
+
+  // Tremolo: an LFO feeding the envelope gain's AudioParam adds a small
+  // oscillating offset on top of whatever the envelope is doing.
+  if (cfg.tremolo) {
+    const lfo = audioCtx.createOscillator();
+    lfo.type = 'sine';
+    lfo.frequency.value = cfg.tremolo.rate;
+    const lfoGain = audioCtx.createGain();
+    lfoGain.gain.value = gain * cfg.tremolo.depth;
+    lfo.connect(lfoGain).connect(env.gain);
+    lfo.start(t0); lfo.stop(stopAt);
+  }
+
+  const voices = cfg.detuneCents ? [-cfg.detuneCents, cfg.detuneCents] : [0];
+  cfg.partials.forEach(([mult, partialGain]) => {
+    voices.forEach(detune => {
+      const osc = audioCtx.createOscillator();
+      osc.type = cfg.oscType;
+      const f = freq * mult;
+      if (cfg.pitchDrop) {
+        osc.frequency.setValueAtTime(f * (1 + cfg.pitchDrop), t0);
+        osc.frequency.exponentialRampToValueAtTime(f, t0 + cfg.pitchDropTime);
+      } else {
+        osc.frequency.value = f;
+      }
+      if (detune) osc.detune.value = detune;
+      const g = audioCtx.createGain();
+      g.gain.value = partialGain / voices.length;
+      osc.connect(g).connect(env);
+      osc.start(t0); osc.stop(stopAt);
+    });
+  });
+}
+
+// Flatten the (octave-neutralized) lines into an absolute-time schedule:
+// {notes: [{start,end,midi,gain}], chips: [{start,end,isRest}], total}.
+// chips is parallel to the .note-chip spans rendered by renderNoteList, in
+// the same order, for highlighting during playback.
+function buildSchedule(musicLines) {
+  let bpm = TEMPO_BPM[DEFAULTS.tempo];
+  let t = 0;
+  const notes = [];
+  const chips = [];
+
+  musicLines.flat().forEach(e => {
+    if (e.type === 'state' && e.dim === Dim.TEMPO) {
+      bpm = TEMPO_BPM[e.level];
+      return;
+    }
+    if (e.type === 'state') return;
+    const beats = DUR_BEATS[e.duration] * (e.dotted ? 1.5 : 1);
+    const dur = beats * (60 / bpm);
+    if (e.type === 'rest') {
+      chips.push({ start: t, end: t + dur, isRest: true });
+      t += dur;
+      return;
+    }
+    if (e.tie && notes.length) {
+      notes[notes.length - 1].end += dur;
+    } else {
+      notes.push({ start: t, end: t + dur, midi: noteMidi(e), gain: DYN_GAIN[e.dynamics] });
+    }
+    chips.push({ start: t, end: t + dur, isRest: false });
+    t += dur;
+  });
+
+  return { notes, chips, total: t };
+}
+
+// Click-to-play: a single global "now playing" row. Clicking another
+// row's note list (or the same row again) stops it.
+let playRafId = null;
+let playStartCtxTime = 0;
+
+function stopFoundMelody() {
+  if (playRafId) { cancelAnimationFrame(playRafId); playRafId = null; }
+  document.querySelectorAll('.note-chip.playing').forEach(c => c.classList.remove('playing'));
+  document.querySelectorAll('.notelist.expanded').forEach(el => {
+    el.classList.remove('expanded');
+    if (el.parentElement) el.parentElement.classList.remove('row-expanded');
+  });
+  S.playingKey = null;
+}
+
+function playFoundMelody(key, block, containerEl) {
+  if (S.playingKey === key) { stopFoundMelody(); return; }
+  stopFoundMelody();
+  if (!block.musicLines || !block.hasNotes) return;
+
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+
+  const schedule = buildSchedule(block.musicLines);
+  if (!schedule.chips.length) return;
+
+  const startAt = audioCtx.currentTime + 0.06;
+  playStartCtxTime = startAt;
+
+  schedule.notes.forEach(n => {
+    const t0 = startAt + n.start;
+    const dur = n.end - n.start;
+    const gap = Math.min(0.05, dur * 0.25);
+    const t1 = startAt + n.end - gap;
+    playNote(freqFromMidi(n.midi), n.gain, t0, t1);
+  });
+
+  S.playingKey = key;
+  // Only expand to a new line if the chips are actually being clipped --
+  // a row with just a couple of notes shouldn't force a wrap.
+  if (containerEl.scrollWidth > containerEl.clientWidth + 1) {
+    containerEl.classList.add('expanded');
+    if (containerEl.parentElement) containerEl.parentElement.classList.add('row-expanded');
+  }
+  animateNoteList(containerEl, schedule, startAt);
+  setTimeout(() => { if (S.playingKey === key) stopFoundMelody(); }, (schedule.total + 0.2) * 1000);
+}
+
+function animateNoteList(containerEl, schedule, startAt) {
+  const chipEls = containerEl.querySelectorAll('.note-chip');
+  function frame() {
+    if (!audioCtx) return;
+    const elapsed = audioCtx.currentTime - startAt;
+    if (elapsed >= schedule.total) { stopFoundMelody(); return; }
+    schedule.chips.forEach((c, i) => {
+      const el = chipEls[i];
+      if (el) el.classList.toggle('playing', elapsed >= c.start && elapsed < c.end);
+    });
+    playRafId = requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+// NOTE: placeholder RPC credentials for a local node. Change rpcuser/rpcpassword
+// in your node config (and below) — do not reuse these defaults anywhere
+// other than a trusted local machine.
+const CFG = {
+  endpoint: 'http://localhost:9332',
+  user:     'memcoin',
+  pass:     'memcoinrpc'
+};
+
+const S = { knownBlocks: [], loading: false, playingKey: null };
+
+async function rpc(method, params = []) {
+  const res = await fetch(CFG.endpoint, {
+    method:  'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Basic ' + btoa(CFG.user + ':' + CFG.pass)
+    },
+    body: JSON.stringify({ jsonrpc: '1.0', id: 1, method, params })
+  });
+  if (!res.ok) {
+    const t = await res.text().catch(() => res.statusText);
+    throw new Error('HTTP ' + res.status + ': ' + t.slice(0, 120));
+  }
+  const d = await res.json();
+  if (d.error) throw new Error(d.error.message || JSON.stringify(d.error));
+  return d.result;
+}
+
+function setVal(id, val, delay = 0) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (el.textContent !== String(val)) {
+    setTimeout(() => { el.textContent = val; }, delay);
+  }
+}
+
+function fmtAgo(ts) {
+  const s = Math.floor(Date.now() / 1000) - ts;
+  if (s < 60)   return s + 's ago';
+  if (s < 180)  return Math.floor(s / 60) + 'm ' + (s % 60) + 's ago';
+  if (s < 3600) return Math.floor(s / 60) + 'm ago';
+  return Math.floor(s / 3600) + 'h ago';
+}
+
+async function refresh() {
+  if (S.loading) return;
+  S.loading = true;
+  try {
+    const [chain, mining, net, mempool] = await Promise.all([
+      rpc('getblockchaininfo'),
+      rpc('getmininginfo'),
+      rpc('getnetworkinfo'),
+      rpc('getmempoolinfo'),
+    ]);
+
+    const newBlock = chain.blocks !== S.knownBlocks[0]?.height;
+
+    const mempoolNumColor = mempool.size >= 100 ? 'var(--col-secondary)' : mempool.size >= 10 ? 'var(--ink-mid)' : 'var(--col-dim)';
+    document.getElementById('mempool-count').innerHTML =
+      `<span style="color:${mempoolNumColor}">${mempool.size}</span><span style="color:var(--col-dim)"> tx</span>`;
+    const kb = mempool.bytes / 1024;
+    const mempoolKB = kb > 0 ? ' · ' + kb.toFixed(1) + ' KB mempool' : '';
+
+    if (newBlock) {
+      const COUNT    = 8;
+      const ROW_DONE = (COUNT - 1) * 53 + 300;
+      const STEP = 150;
+
+      setVal('blocks', chain.blocks, 0);
+      await loadBlocks(chain.bestblockhash, chain.blocks, 8);
+
+      setTimeout(() => {
+        document.getElementById('hashrate').innerHTML =
+          mining.networkhashps.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) +
+          ' <span style="color:var(--col-dim)">H/s</span>';
+      }, ROW_DONE + STEP);
+
+      setTimeout(() => {
+        document.getElementById('difficulty').textContent =
+          chain.difficulty.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      }, ROW_DONE + STEP * 2);
+
+      setTimeout(() => {
+        document.getElementById('last-update').textContent =
+          'updated ' + new Date().toLocaleTimeString('en-GB') + ' · ' + net.connections + ' peers' + mempoolKB;
+      }, ROW_DONE + STEP * 3);
+
+    } else {
+      document.getElementById('last-update').textContent =
+        'updated ' + new Date().toLocaleTimeString('en-GB') + ' · ' + net.connections + ' peers' + mempoolKB;
+    }
+
+  } catch (e) {
+    console.error(e);
+  } finally {
+    S.loading = false;
+  }
+}
+
+// Decode a getblock(...) result's nNonce field (whatever it's called) into
+// everything the UI needs: display text, emergent-music schedule, etc.
+function buildBlockEntry(height, hash, blk) {
+  const entry = { height, hash, time: blk.time, ntx: blk.tx.length };
+
+  const nonceHex = (typeof blk.nNonce === 'string' && blk.nNonce.replace(/^0x/i, '').length === 128) ? blk.nNonce
+                 : (typeof blk.nonce  === 'string' && blk.nonce.replace(/^0x/i, '').length === 128)  ? blk.nonce
+                 : null;
+  if (nonceHex) {
+    try {
+      const nonceBytes = hexToBytes(nonceHex);
+      const decoded = decodeNonce(nonceBytes);
+      const musicEvents = neutralizeOctave(decodeMusic(nonceBytes));
+      const musicLines = extractMusicLines(musicEvents);
+      const hasNotes = musicLines.some(line => line.some(e => e.type === 'note' || e.type === 'rest'));
+      entry.decoded = decoded;
+      entry.musicLines = musicLines;
+      entry.hasNotes = hasNotes;
+      // For the Memory column: base/utf8 show their decoded characters;
+      // everything else (mode marker 129-255) has no characters to show,
+      // so display the Found Melody note count directly instead.
+      entry.displayMode = (decoded.mode === 'base' || decoded.mode === 'utf8') ? decoded.mode : 'music';
+    } catch { /* leave entry.decoded unset */ }
+  }
+  return entry;
+}
+
+async function loadBlocks(hash, height, count) {
+  S.knownBlocks = [];
+  let h = hash, ht = height;
+  for (let i = 0; i < count && h; i++) {
+    try {
+      const blk = await rpc('getblock', [h, 1]);
+      S.knownBlocks.push(buildBlockEntry(ht, h, blk));
+      h  = blk.previousblockhash;
+      ht--;
+    } catch { break; }
+  }
+  renderBlocks();
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// Compact one-line rendering for the Memory column: literal characters for
+// text bytes, faint symbols for note/rest, nothing for state changes and
+// line breaks (kept silent so the column stays a single line).
+function compactStream(events) {
+  if (!events.length) return '<span class="empty-hint">(empty)</span>';
+  let s = '';
+  events.forEach(e => {
+    if (e.type === 'text') s += escapeHtml(e.ch);
+    else if (e.type === 'note') s += '<span class="sym">\u266A</span>';
+    else if (e.type === 'rest') s += '<span class="sym">\u00B7</span>';
+    else if (e.type === 'linebreak') s += ' ';
+  });
+  return s || '<span class="empty-hint">(empty)</span>';
+}
+
+// Returns just the character/symbol part (base/utf8); empty for the
+// pure music marker range (129-255), which has no characters at all.
+function memoryChars(b) {
+  if (!b.decoded) return '<span class="empty-hint">(no nNonce field)</span>';
+  if (b.displayMode === 'utf8') return b.decoded.text.length ? escapeHtml(b.decoded.text).replace(/\n/g, ' / ') : '<span class="empty-hint">(empty)</span>';
+  if (b.displayMode === 'base') return compactStream(b.decoded.events);
+  return '';
+}
+
+function renderBlocks() {
+  document.getElementById('blocks-list').innerHTML =
+    S.knownBlocks.map((b, i) => {
+      const chars = memoryChars(b);
+      // Base/UTF-8 rows are often short (the gibberish text only uses a
+      // handful of bytes) -- show the Found Melody for the same bytes
+      // right after it, so every row carries both readings.
+      const notes = b.hasNotes
+        ? `<span class="block-memory-text notelist${chars ? ' notes-inline' : ''}" data-height="${b.height}">${renderNoteList(b.musicLines)}</span>`
+        : '';
+      // Rare edge case: nibble 0 decodes straight to EOF/reserved, so
+      // there's neither text (mode marker 129-255) nor any note/rest.
+      const charsHtml = chars
+        ? `<span class="block-memory-text">${chars}</span>`
+        : (b.hasNotes ? '' : '<span class="block-memory-text"><span class="empty-hint">(empty)</span></span>');
+      return `
+      <div class="block-row" style="animation-delay:${i * 53}ms">
+        <span class="block-height">#${b.height}</span>
+        <span class="block-memory">${charsHtml}${notes}</span>
+        <span class="block-time" data-block-idx="${i}">${fmtAgo(b.time)}</span>
+        <span class="block-txs">${b.ntx}</span>
+      </div>
+    `;
+    }).join('');
+
+  document.querySelectorAll('.block-memory-text.notelist').forEach(el => {
+    const height = Number(el.dataset.height);
+    const b = S.knownBlocks.find(x => x.height === height);
+    if (b) el.addEventListener('click', () => playFoundMelody('recent-' + height, b, el));
+  });
+}
+
+function updateBlockTimes() {
+  document.querySelectorAll('[data-block-idx]').forEach(el => {
+    const b = S.knownBlocks[el.dataset.blockIdx];
+    if (b) el.textContent = fmtAgo(b.time);
+  });
+}
+
+let step = 0;
+
+function updateDots(active) {
+  for (let i = 0; i < 5; i++) {
+    document.getElementById('dot-' + i).classList.toggle('lit', i === active);
+  }
+}
+
+function flashUpdateDot() {
+  const d = document.getElementById('dot-update');
+  d.classList.add('lit');
+  setTimeout(() => d.classList.remove('lit'), 150);
+}
+
+function tick() {
+  if (S.playingKey !== null) return; // paused while a Found Melody is playing
+  updateDots(step < 5 ? step : -1);
+  if (step === 5) { flashUpdateDot(); refresh(); }
+  updateBlockTimes();
+
+  step = (step + 1) % 6;
+}
+
+window.addEventListener('load', () => {
+  refresh();
+  setInterval(tick, 1000);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memcoin Explorer</title>
+<style>
+:root {
+  --bg:       #ffffff;
+  --bg2:      #ffffff;
+  --bg3:      #f4f4f4;
+  --border:   #000000;
+  --border2:  #eeeeee;
+  --accent:   #000000;
+  --acc-dim:  #333333;
+  --text:     #000000;
+  --grey:     #888888;
+  --dim:      #aaaaaa;
+  --red:      #cc0000;
+  --amber:    #cc7700;
+  --blue:     #0055cc;
+  --purple:   #aa00aa;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  padding: 24px 16px 64px;
+}
+
+#app { width: 100%; max-width: 720px; }
+
+#top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+#info-cards { display: flex; gap: 6px; align-items: center; }
+.icard {
+  font-size: 11px;
+  padding: 3px 8px;
+  border: 1px solid var(--border2);
+  background: var(--bg2);
+  white-space: nowrap;
+}
+.icard .ik { color: var(--dim); margin-right: 4px; }
+.icard .iv { color: var(--grey); }
+.icard.live .iv { color: var(--accent); }
+#theme-switcher { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+#theme-switcher .label { font-size: 10px; color: var(--dim); }
+.theme-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  cursor: pointer;
+  opacity: 0.35;
+  transition: opacity 0.15s;
+}
+.theme-dot:hover { opacity: 0.21; }
+.theme-dot.active { opacity: 0.21; }
+
+#search-bar { display: flex; margin-bottom: 20px; }
+
+#search-input {
+  flex: 1;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  border-right: none;
+  background: var(--bg2);
+  color: var(--text);
+  padding: 8px 10px;
+  outline: none;
+  caret-color: var(--accent);
+}
+#search-input::placeholder { color: var(--dim); }
+#search-input:focus { background: var(--bg3); }
+
+#search-btn {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  color: var(--text);
+  padding: 8px 18px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+#search-btn:hover { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+
+#nav-bar { margin-bottom: 14px; }
+.nav-time { margin-left: auto; font-size: 11px; color: var(--dim); align-self: center; }
+
+.section-title {
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.section-sub { font-size: 11px; color: var(--grey); letter-spacing: 0; text-transform: none; }
+
+.kv { display: flex; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--border2); font-size: 12px; }
+.kv:last-child { border-bottom: none; }
+.kv .k { color: var(--grey); white-space: nowrap; min-width: 110px; flex-shrink: 0; }
+.kv .v { word-break: break-all; }
+
+.io-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 14px; }
+.io-table th, .io-table td { border: 1px solid var(--border2); padding: 5px 8px; text-align: left; }
+.io-table th { border-color: var(--border); background: var(--bg3); font-size: 11px; }
+.io-table tr:hover td { background: var(--bg3); }
+.io-table .right { text-align: right; }
+
+.tag { display: inline-block; font-size: 10px; border: 1px solid currentColor; padding: 1px 5px; margin-left: 4px; }
+.tag.cltv   { color: var(--blue); }
+.tag.p2pkh  { color: var(--grey); }
+.tag.cb     { color: var(--amber); }
+.tag.avail  { color: var(--accent); }
+.tag.locked { color: var(--dim); }
+.tag.tx2    { color: var(--purple); }
+.tag.cold   { color: var(--amber); }
+.tag.ice    { color: var(--blue); }
+
+.block-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border2);
+  font-size: 12px;
+  gap: 8px;
+  cursor: pointer;
+}
+.block-row:hover { background: var(--bg2); }
+.block-row:last-child { border-bottom: none; }
+.block-height { font-size: 14px; min-width: 55px; }
+.block-hash { font-size: 11px; color: var(--grey); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+.block-info { font-size: 11px; color: var(--dim); white-space: nowrap; }
+
+.tx-row { padding: 4px 0; border-bottom: 1px solid var(--border2); font-size: 11px; color: var(--grey); cursor: pointer; word-break: break-all; }
+.tx-row:hover { color: var(--text); }
+.tx-row:last-child { border-bottom: none; }
+
+.utxo-row { display: flex; justify-content: space-between; align-items: baseline; padding: 5px 0; border-bottom: 1px solid var(--border2); font-size: 12px; gap: 8px; }
+.utxo-row:last-child { border-bottom: none; }
+.utxo-txid { font-size: 11px; color: var(--grey); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; cursor: pointer; }
+.utxo-txid:hover { color: var(--text); }
+
+.box { border: 1px solid var(--border2); padding: 9px 12px; font-size: 12px; word-break: break-all; line-height: 1.8; }
+.box.err  { border-color: var(--red); color: var(--red); }
+
+.btn {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  color: var(--text);
+  padding: 7px 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn:hover { background: var(--bg3); border-color: var(--acc-dim); }
+.btn.sm { font-size: 11px; padding: 3px 10px; }
+.btn-row { display: flex; gap: 8px; }
+
+.home-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.home-tab {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 5px 14px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: var(--dim);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 0.1s;
+}
+.home-tab:hover { color: var(--grey); }
+.home-tab.active { color: var(--text); border-bottom-color: var(--accent); }
+.io-table tr.peer-active td { background: var(--bg3); }
+
+.clickable { cursor: pointer; text-decoration: underline; text-decoration-color: var(--border2); }
+.clickable:hover { text-decoration-color: var(--grey); }
+</style>
+</head>
+<body>
+<div id="app">
+
+<div id="top-bar">
+  <div id="info-cards">
+    <div class="icard" id="icard-block"><span class="ik">block</span><span class="iv" id="ic-block">—</span></div>
+    <div class="icard" id="icard-mempool"><span class="ik">mempool</span><span class="iv" id="ic-mempool">—</span></div>
+    <div class="icard" id="icard-peers"><span class="ik">peers</span><span class="iv" id="ic-peers">—</span></div>
+  </div>
+  <div id="theme-switcher"></div>
+</div>
+
+<div id="search-bar">
+  <input type="text" id="search-input" placeholder="txid · address · block height or hash"
+    onkeydown="if(event.key==='Enter') doRefresh()">
+  <button id="search-btn" onclick="doRefresh()">search</button>
+</div>
+
+<div id="nav-bar" style="display:none;margin-bottom:14px;gap:8px">
+  <button class="btn sm" onclick="showHome()">← home</button>
+  <button class="btn sm" onclick="doRefresh()">↻ refresh</button>
+  <span class="nav-time" style="margin-left:auto;font-size:11px;align-self:center"></span>
+</div>
+
+<div id="result"></div>
+
+<div id="home">
+  <div class="home-tabs">
+    <button class="home-tab active" id="htab-blocks"  onclick="switchHomeTab(this,'blocks')">recent blocks</button>
+    <button class="home-tab"        id="htab-mempool" onclick="switchHomeTab(this,'mempool')">mempool</button>
+    <button class="home-tab"        id="htab-peers"   onclick="switchHomeTab(this,'peers')">peers</button>
+  </div>
+
+  <div id="hpanel-blocks">
+    <div id="recent-blocks"><div style="color:var(--dim);font-size:12px">connect to load</div></div>
+  </div>
+
+  <div id="hpanel-mempool" style="display:none">
+    <div id="home-mempool-summary" style="margin-bottom:10px"></div>
+    <div id="home-mempool-list"></div>
+  </div>
+
+  <div id="hpanel-peers" style="display:none">
+    <div id="home-peers-list"></div>
+    <div id="home-managed-nodes" style="margin-top:18px"></div>
+    <div id="home-banned-nodes" style="margin-top:18px"></div>
+  </div>
+</div>
+
+</div>
+<script>
+// NOTE: placeholder RPC credentials for a local node. Change rpcuser/rpcpassword
+// in your node config (and below) — do not reuse these defaults anywhere
+// other than a trusted local machine.
+const CFG = { endpoint:'http://localhost:9332', user:'memcoin', pass:'memcoinrpc' };
+const S   = { connected:false, height:0 };
+
+const THEMES = [
+    { name:'Original',
+    bg:'#ffffff', bg2:'#ffffff', bg3:'#f4f4f4',
+    border:'#000000', border2:'#eeeeee',
+    accent:'#000000', accdim:'#333333',
+    text:'#000000', grey:'#888888', dim:'#aaaaaa',
+    red:'#cc0000', amber:'#cc7700', blue:'#0055cc', purple:'#aa00aa',
+    dot:'#333333' },
+  { name:'Green',
+    bg:'#0a0a0a', bg2:'#0f0f0f', bg3:'#141414',
+    border:'#1f3320', border2:'#2a2a2a',
+    accent:'#39d353', accdim:'#1e6b24',
+    text:'#d0d0d0', grey:'#777', dim:'#444',
+    red:'#e05252', amber:'#d4a017', blue:'#5b9bd5', purple:'#b07dff',
+    dot:'#39d353' },
+  { name:'Amber',
+    bg:'#0d0800', bg2:'#120b00', bg3:'#180f00',
+    border:'#3a2200', border2:'#2a1800',
+    accent:'#ffb000', accdim:'#7a5200',
+    text:'#e8a040', grey:'#996020', dim:'#4a2e08',
+    red:'#ff5555', amber:'#ffb000', blue:'#88aacc', purple:'#cc88ff',
+    dot:'#ffb000' },
+  { name:'Solarized',
+    bg:'#002b36', bg2:'#01333f', bg3:'#073642',
+    border:'#0d3f4a', border2:'#094050',
+    accent:'#2aa198', accdim:'#1a6560',
+    text:'#839496', grey:'#586e75', dim:'#3a5560',
+    red:'#dc322f', amber:'#b58900', blue:'#268bd2', purple:'#6c71c4',
+    dot:'#2aa198' },
+  { name:'Dracula',
+    bg:'#1a1b26', bg2:'#1e1f2e', bg3:'#282a36',
+    border:'#363849', border2:'#44475a',
+    accent:'#50fa7b', accdim:'#2d8c4a',
+    text:'#f8f8f2', grey:'#6272a4', dim:'#44475a',
+    red:'#ff5555', amber:'#ffb86c', blue:'#8be9fd', purple:'#bd93f9',
+    dot:'#50fa7b' },
+  { name:'Nord',
+    bg:'#242831', bg2:'#2e3440', bg3:'#3b4252',
+    border:'#3d4a5c', border2:'#4c566a',
+    accent:'#88c0d0', accdim:'#4e7a8a',
+    text:'#eceff4', grey:'#8090a8', dim:'#4c566a',
+    red:'#bf616a', amber:'#ebcb8b', blue:'#81a1c1', purple:'#b48ead',
+    dot:'#88c0d0' },
+  { name:'Gruvbox',
+    bg:'#1d2021', bg2:'#282828', bg3:'#3c3836',
+    border:'#3c3836', border2:'#504945',
+    accent:'#b8bb26', accdim:'#79740e',
+    text:'#ebdbb2', grey:'#928374', dim:'#504945',
+    red:'#fb4934', amber:'#fabd2f', blue:'#83a598', purple:'#d3869b',
+    dot:'#b8bb26' },
+  { name:'White',
+    bg:'#ffffff', bg2:'#f4f4f4', bg3:'#e8e8e8',
+    border:'#cccccc', border2:'#dddddd',
+    accent:'#006600', accdim:'#338833',
+    text:'#111111', grey:'#555555', dim:'#aaaaaa',
+    red:'#cc0000', amber:'#885500', blue:'#0055aa', purple:'#660099',
+    dot:'#555555' },
+];
+
+function applyTheme(t) {
+  const r = document.documentElement.style;
+  r.setProperty('--bg',      t.bg);
+  r.setProperty('--bg2',     t.bg2);
+  r.setProperty('--bg3',     t.bg3);
+  r.setProperty('--border',  t.border);
+  r.setProperty('--border2', t.border2);
+  r.setProperty('--accent',  t.accent);
+  r.setProperty('--acc-dim', t.accdim);
+  r.setProperty('--text',    t.text);
+  r.setProperty('--grey',    t.grey);
+  r.setProperty('--dim',     t.dim);
+  r.setProperty('--red',     t.red);
+  r.setProperty('--amber',   t.amber);
+  r.setProperty('--blue',    t.blue);
+  r.setProperty('--purple',  t.purple);
+  document.querySelectorAll('.theme-dot').forEach((d,i) => d.classList.toggle('active', THEMES[i] === t));
+  try { localStorage.setItem('memcoin-theme', t.name); } catch(e){}
+}
+
+function buildThemeBar() {
+  const bar = document.getElementById('theme-switcher');
+  THEMES.forEach((t, i) => {
+    const d = document.createElement('span');
+    d.className = 'theme-dot';
+    d.title = t.name;
+    d.style.background = t.dot;
+    d.onclick = () => applyTheme(t);
+    bar.appendChild(d);
+  });
+  let saved; try { saved = localStorage.getItem('memcoin-theme'); } catch(e){}
+  applyTheme(THEMES.find(t => t.name === saved) || THEMES[0]);
+}
+
+async function rpc(method, params=[]) {
+  const res = await fetch(CFG.endpoint, {
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Basic '+btoa(CFG.user+':'+CFG.pass)},
+    body: JSON.stringify({jsonrpc:'1.0',id:1,method,params})
+  });
+  if (!res.ok) { const t=await res.text().catch(()=>res.statusText); throw new Error('HTTP '+res.status+': '+t.slice(0,120)); }
+  const d = await res.json();
+  if (d.error) throw new Error(d.error.message||JSON.stringify(d.error));
+  return d.result;
+}
+
+async function rpcWallet(method, params, wallet) {
+  const url = CFG.endpoint + '/wallet/' + encodeURIComponent(wallet);
+  const res = await fetch(url, {
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Basic '+btoa(CFG.user+':'+CFG.pass)},
+    body: JSON.stringify({jsonrpc:'1.0',id:1,method,params})
+  });
+  if (!res.ok) { const t=await res.text().catch(()=>res.statusText); throw new Error('HTTP '+res.status+': '+t.slice(0,120)); }
+  const d = await res.json();
+  if (d.error) throw new Error(d.error.message||JSON.stringify(d.error));
+  return d.result;
+}
+
+const unhex = s => { const b=new Uint8Array(s.length/2); for(let i=0;i<s.length;i+=2) b[i/2]=parseInt(s.slice(i,i+2),16); return b; };
+function fmtBit(bit) {
+  if (bit === 0) return '0.0 ᴋ';
+  const mem  = Math.floor(bit / 100000000);
+  const mbit = Math.floor((bit % 100000000) / 1000000);
+  const kb   = (bit % 1000000) / 1000;
+  const p = [];
+  if (mem  > 0) p.push(mem.toLocaleString() + ' 𝕄');
+  if (mbit > 0) p.push(mbit + ' ᴍ');
+  if (kb > 0 || (mem === 0 && mbit === 0)) p.push(parseFloat(kb.toFixed(3)) + ' ᴋ');
+  return p.join(' ');
+}
+function toBit(btc)  { return Math.round(btc*1e8); }
+function fmtSize(b)   { return b>=1024?(b/1024).toFixed(1)+' KB':b+' bytes'; }
+function fmtTime(ts)  { if(!ts) return '—'; return new Date(ts*1000).toLocaleString(); }
+
+function isCLTVScript(hex) {
+  const b=unhex(hex);
+  if(b.length<29) return false;
+  const l=b[0]; if(l<1||l>5) return false;
+  if(b.length!==1+l+27) return false;
+  const o=1+l;
+  return b[o]===0xb1&&b[o+1]===0x75&&b[o+2]===0x76&&b[o+3]===0xa9&&b[o+4]===0x14&&b[o+25]===0x88&&b[o+26]===0xac;
+}
+function parseCLTVHeight(hex) {
+  const b=unhex(hex),l=b[0],lb=b.slice(1,1+l);
+  let v=0; for(let i=0;i<lb.length;i++) v|=lb[i]<<(8*i); return v;
+}
+function isP2PKH(hex) { return hex.startsWith('76a914')&&hex.endsWith('88ac')&&hex.length===50; }
+
+function scriptTag(hex, confirmed=true) {
+  if (isCLTVScript(hex)) {
+    if (!confirmed) return '<span class="tag cltv">CLTV</span>';
+    const h=parseCLTVHeight(hex), ul=h+1<=S.height;
+    return '<span class="tag cltv">CLTV · '+(ul?'unlocked':'locks at '+(h+1))+'</span>';
+  }
+  if (isP2PKH(hex)) return '<span class="tag p2pkh">P2PKH</span>';
+  return '';
+}
+function isTX1(raw) {
+  return !raw.vin?.[0]?.coinbase &&
+    (raw.vout||[]).some(v=>isCLTVScript(v.scriptPubKey?.hex||''));
+}
+function kv(k,v) { return '<div class="kv"><span class="k">'+k+'</span><span class="v">'+v+'</span></div>'; }
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function setEl(id,h) { const e=document.getElementById(id); if(e) e.innerHTML=h; }
+function setResult(h) {
+  setEl('result',h);
+  document.getElementById('nav-bar').style.display = h ? 'flex' : 'none';
+  const t=document.querySelector('.nav-time'); if(t) t.textContent='';
+}
+function setSearch(v) { document.getElementById('search-input').value=v; }
+
+function showHome() {
+  setResult('');
+  document.getElementById('home').style.display='';
+  document.getElementById('search-input').value='';
+}
+function goTx(txid){ setSearch(txid); showTx(txid); }
+function goBlock(hash,height) {
+  document.getElementById('home').style.display='none';
+  setSearch(height);
+  showBlock(hash);
+}
+
+async function updateInfoStrip() {
+  try {
+    const [mp,net,chain]=await Promise.all([rpc('getmempoolinfo'),rpc('getnetworkinfo'),rpc('getblockchaininfo')]);
+    S.height=chain.blocks;
+    setEl('ic-block',   chain.blocks);
+    setEl('ic-mempool', mp.size+' tx');
+    setEl('ic-peers',   net.connections);
+    ['icard-block','icard-mempool','icard-peers'].forEach(id=>{
+      const el=document.getElementById(id); if(el) el.classList.add('live');
+    });
+  } catch(e){}
+}
+
+async function autoConnect() {
+  await updateInfoStrip();
+  S.connected=true;
+  loadRecentBlocks();
+}
+
+async function doSearch(silent=false) {
+  const q=document.getElementById('search-input').value.trim();
+  if(!q) return;
+  document.getElementById('home').style.display='none';
+  if(!silent) setResult('<div style="color:var(--dim);font-size:12px;padding:8px 0">searching…</div>');
+  try {
+    if(/^\d+$/.test(q)) { await showBlock(parseInt(q)); return; }
+    if(/^[0-9a-fA-F]{64}$/.test(q)) {
+      try { await showBlock(q); return; } catch(e){}
+      try { await showTx(q); return; } catch(e){}
+      const msg = 'transaction not found: '+q+'<br><span style="font-size:11px;color:var(--dim)">Transaction is not in the mempool and not a wallet transaction. Enable <code>-txindex</code> on the node to index all transactions.</span>';
+      setResult('<div class="box err">'+msg+'</div>'); return;
+    }
+    if(q.length>=25 && q[0]==='M') { await showAddress(q); return; }
+    setResult('<div class="box err">unrecognized — enter txid, block height, block hash, or M… address</div>');
+  } catch(e) { setResult('<div class="box err">'+e.message+'</div>'); }
+}
+async function doRefresh() {
+  const y=window.scrollY;
+  await doSearch(true);
+  window.scrollTo(0,y);
+  const t=document.getElementById('nav-bar');
+  if(t) { const s=t.querySelector('.nav-time'); if(s) s.textContent='Fetched at '+new Date().toLocaleTimeString(); }
+}
+
+async function getRawTxVerbose(txid) {
+  try {
+    return await rpc('getrawtransaction', [txid, 1]);
+  } catch(e) {
+    // Fallback for nodes without -txindex: try each loaded wallet's gettransaction
+    let wallets = [];
+    try { wallets = await rpc('listwallets'); } catch(_) {}
+    for (const w of wallets) {
+      try {
+        const wt = await rpcWallet('gettransaction', [txid, true], w);
+        const decoded = await rpc('decoderawtransaction', [wt.hex]);
+        decoded.confirmations = wt.confirmations || 0;
+        decoded.blocktime     = wt.blocktime || wt.timereceived || 0;
+        decoded.blockhash     = wt.blockhash || null;
+        return decoded;
+      } catch(_) { continue; }
+    }
+    throw e; // re-throw original error if no wallet knows this tx
+  }
+}
+
+async function showTx(txid) {
+  const raw=await getRawTxVerbose(txid);
+  const confs=raw.confirmations||0;
+  const isCB=!!(raw.vin?.[0]?.coinbase);
+  const tx1=!isCB&&isTX1(raw);
+  const totalOut=(raw.vout||[]).reduce((s,v)=>s+toBit(v.value),0);
+
+  let totalIn=0, feeStr='', inAmounts=[], tx2=false;
+  if(!isCB){
+    const prevTxs=await Promise.allSettled((raw.vin||[]).map(inp=>getRawTxVerbose(inp.txid)));
+    let allKnown=true;
+    const inputSpks=[];
+    for(const [i,inp] of (raw.vin||[]).entries()){
+      const r=prevTxs[i];
+      if(r.status==='fulfilled'){
+        const bit=toBit(r.value.vout[inp.vout].value);
+        inAmounts[i]=bit; totalIn+=bit;
+        inputSpks[i]=r.value.vout[inp.vout]?.scriptPubKey?.hex||'';
+      } else { allKnown=false; inputSpks[i]=null; }
+    }
+    feeStr=allKnown?fmtBit(totalIn-totalOut):'—';
+    if(!tx1 && allKnown && raw.locktime>0)
+      tx2=inputSpks.every(s=>isCLTVScript(s)) &&
+          (raw.vout||[]).every(v=>isP2PKH(v.scriptPubKey?.hex||''));
+  }
+
+  let blockHeight = '—';
+  if(confs>0 && raw.blockhash) {
+    try {
+      const blk=await rpc('getblock',[raw.blockhash,1]);
+      blockHeight=blk.height;
+    } catch(e){}
+  }
+
+  let h='<div class="section-title">transaction <span class="section-sub">'+confs+' confirmation'+(confs!==1?'s':'')+'</span></div>';
+  h+='<div style="margin-bottom:12px">';
+  h+=kv('txid','<span style="word-break:break-all">'+txid+'</span>');
+  h+=kv('status',confs>0?'confirmed · block '+(blockHeight!=='—'?blockHeight:'—'):'unconfirmed (mempool)');
+  h+=kv('time',fmtTime(raw.time||raw.blocktime));
+  h+=kv('size',fmtSize(raw.size||0));
+  h+=kv('locktime',raw.locktime>0?raw.locktime+(tx2?' <span class="tag tx2">TX2 nLockTime</span>':''):'0');
+  const displayFee=(tx1||tx2)?fmtBit(0):feeStr;
+  if(!isCB&&displayFee) h+=kv('fee',displayFee);
+  if(tx2) h+=kv('type','<span class="tag tx2">TX2 spend</span>');
+  if(tx1) h+=kv('type','<span class="tag cltv">TX1 payment</span>');
+  h+='</div>';
+
+  h+='<div style="font-size:11px;color:var(--grey);margin-bottom:4px">inputs ('+(raw.vin||[]).length+')</div>';
+  LM.inputList=(raw.vin||[]).map((inp,i)=>{
+    if(inp.coinbase) return '<tr><td>'+i+'</td><td colspan="2">coinbase <span class="tag cb">coinbase</span></td></tr>';
+    return '<tr><td>'+i+'</td><td style="font-size:11px;word-break:break-all"><span class="clickable" onclick="showTx(\''+inp.txid+'\');setSearch(\''+inp.txid+'\')">'+(inp.txid.slice(0,16))+'…</span>:'+inp.vout+'</td><td class="right">'+(inAmounts[i]!=null?fmtBit(inAmounts[i]):'<span style="color:var(--dim)">—</span>')+'</td></tr>';
+  });
+  LM.inputShown=Math.min(LM_IO_INIT,LM.inputList.length);
+  h+='<table class="io-table"><thead><tr><th>#</th><th>from</th><th class="right">amount</th></tr></thead><tbody id="input-list-container">'+LM.inputList.slice(0,LM.inputShown).join('')+'</tbody></table>';
+  h+=loadMoreBtn('input-loadmore-btn');
+
+  h+='<div style="font-size:11px;color:var(--grey);margin-bottom:4px;margin-top:10px">outputs ('+(raw.vout||[]).length+')</div>';
+  LM.outputList=(raw.vout||[]).map(v=>{
+    const spk=v.scriptPubKey?.hex||'';
+    const addr=v.scriptPubKey?.addresses?.[0]||v.scriptPubKey?.address||'';
+    const addrHtml=addr?'<span class="clickable" onclick="showAddress(\''+addr+'\');setSearch(\''+addr+'\')">'+(addr)+'</span>':'<span style="color:var(--dim)">'+spk.slice(0,20)+'…</span>';
+    return '<tr><td>'+v.n+'</td><td style="font-size:11px;word-break:break-all">'+addrHtml+scriptTag(spk,confs>0)+'</td><td class="right">'+fmtBit(toBit(v.value))+'</td></tr>';
+  });
+  LM.outputShown=Math.min(LM_IO_INIT,LM.outputList.length);
+  h+='<table class="io-table"><thead><tr><th>#</th><th>to</th><th class="right">amount</th></tr></thead><tbody id="output-list-container">'+LM.outputList.slice(0,LM.outputShown).join('')+'</tbody></table>';
+  h+=loadMoreBtn('output-loadmore-btn');
+  setResult(h);
+  refreshLoadMoreBtn('input-loadmore-btn',  LM.inputShown,  LM.inputList.length,  LM_IO_STEP, loadMoreInputs);
+  refreshLoadMoreBtn('output-loadmore-btn', LM.outputShown, LM.outputList.length, LM_IO_STEP, loadMoreOutputs);
+}
+
+const LM = { txList:[], txShown:0, utxoList:[], utxoShown:0, inputList:[], inputShown:0, outputList:[], outputShown:0 };
+const LM_TX_INIT=30, LM_TX_STEP=50, LM_UTXO_INIT=20, LM_UTXO_STEP=20, LM_IO_INIT=30, LM_IO_STEP=50;
+
+function renderTxRows(list, shown) {
+  return list.slice(0,shown).map((txid,i)=>
+    '<div class="tx-row" onclick="showTx(\''+txid+'\');setSearch(\''+txid+'\')">'
+    +'<span style="color:var(--dim);margin-right:8px">'+i+'</span>'+txid+'</div>'
+  ).join('');
+}
+function loadMoreTx() {
+  LM.txShown=Math.min(LM.txShown+LM_TX_STEP, LM.txList.length);
+  const container=document.getElementById('tx-list-container');
+  if(!container) return;
+  container.innerHTML=renderTxRows(LM.txList, LM.txShown);
+  refreshLoadMoreBtn('tx-loadmore-btn', LM.txShown, LM.txList.length, LM_TX_STEP, loadMoreTx);
+}
+
+function renderUtxoRows(list, shown) {
+  return list.slice(0,shown).map(u=>{
+    let st;
+    if(u.tier==='cold'){
+      const lbl = u.isCltv ? 'CLTV · cold' : 'cold';
+      st = '<span class="tag cold">'+lbl+'</span>'
+         + ' <span style="font-size:10px;color:var(--dim)">ice in '+u.blocksUntilIce+' blocks</span>';
+    } else {
+      st = u.isCltv
+        ?(u.unlocked?'<span class="tag avail">unlocked</span>':'<span class="tag locked">locked · '+((u.cltvH+1)-S.height)+' blocks</span>')
+        :'<span class="tag p2pkh">available</span>';
+    }
+    return '<div class="utxo-row"><span class="utxo-txid" onclick="showTx(\''+u.txid+'\');setSearch(\''+u.txid+'\')">'+u.txid+':'+u.vout+'</span><span style="white-space:nowrap">'+fmtBit(u.bit)+'</span><span>'+st+'</span></div>';
+  }).join('');
+}
+function loadMoreUtxo() {
+  LM.utxoShown=Math.min(LM.utxoShown+LM_UTXO_STEP, LM.utxoList.length);
+  const container=document.getElementById('utxo-list-container');
+  if(!container) return;
+  container.innerHTML=renderUtxoRows(LM.utxoList, LM.utxoShown);
+  refreshLoadMoreBtn('utxo-loadmore-btn', LM.utxoShown, LM.utxoList.length, LM_UTXO_STEP, loadMoreUtxo);
+}
+function loadMoreInputs() {
+  LM.inputShown=Math.min(LM.inputShown+LM_IO_STEP, LM.inputList.length);
+  const c=document.getElementById('input-list-container');
+  if(!c) return;
+  c.innerHTML=LM.inputList.slice(0,LM.inputShown).join('');
+  refreshLoadMoreBtn('input-loadmore-btn', LM.inputShown, LM.inputList.length, LM_IO_STEP, loadMoreInputs);
+}
+function loadMoreOutputs() {
+  LM.outputShown=Math.min(LM.outputShown+LM_IO_STEP, LM.outputList.length);
+  const c=document.getElementById('output-list-container');
+  if(!c) return;
+  c.innerHTML=LM.outputList.slice(0,LM.outputShown).join('');
+  refreshLoadMoreBtn('output-loadmore-btn', LM.outputShown, LM.outputList.length, LM_IO_STEP, loadMoreOutputs);
+}
+
+function refreshLoadMoreBtn(id, shown, total, step, fn) {
+  const btn=document.getElementById(id);
+  if(!btn) return;
+  const remaining=total-shown;
+  if(remaining<=0){ btn.style.display='none'; return; }
+  btn.style.display='';
+  btn.textContent='load more ('+shown+' shown · '+remaining+' remaining)';
+  btn.onclick=fn;
+}
+
+function loadMoreBtn(id) {
+  return '<button class="btn sm" id="'+id+'" style="margin-top:10px;display:none"></button>';
+}
+
+async function showAddress(addr) {
+  const [scan, chain, coldList, iceRec] = await Promise.all([
+    rpc('scantxoutset', ['start', ['addr('+addr+')']]),
+    rpc('getblockchaininfo'),
+    rpc('getcoldaddress', [addr]).catch(() => []),
+    rpc('geticeaddress',  [addr]).catch(() => ({found:false, count:0, heights:[]}))
+  ]);
+  S.height = chain.blocks;
+  if (!scan || !scan.success) throw new Error('scantxoutset failed');
+
+  // Normal UTXOs (scantxoutset)
+  let normalAvail = 0, normalLocked = 0;
+  const normalUtxos = (scan.unspents || []).map(u => {
+    const bit = toBit(u.amount), spk = u.scriptPubKey || '';
+    const isCltv = isCLTVScript(spk), cltvH = isCltv ? parseCLTVHeight(spk) : null;
+    const unlocked = isCltv ? cltvH + 1 <= S.height : true;
+    if (isCltv) { unlocked ? normalAvail += bit : normalLocked += bit; } else normalAvail += bit;
+    return { txid:u.txid, vout:u.vout, bit, isCltv, cltvH, unlocked, tier:'normal' };
+  });
+
+  // Cold UTXOs (getcoldaddress)
+  let coldTotal = 0;
+  const coldUtxos = (coldList || []).map(u => {
+    const bit = Math.round(parseFloat(u.value) * 1e8);
+    coldTotal += bit;
+    return { txid:u.txid, vout:u.vout, bit, isCltv: u.keyType==='CLTV', tier:'cold',
+             blocksUntilIce: Math.max(0, u.iceDemotionBlock - S.height) };
+  });
+
+  // Ice UTXOs (geticeaddress)
+  const iceHeights = iceRec && iceRec.found ? iceRec.heights : [];
+
+  const allUtxos   = [...normalUtxos, ...coldUtxos];
+  LM.utxoList  = allUtxos;
+  LM.utxoShown = Math.min(LM_UTXO_INIT, allUtxos.length);
+
+    let h = '<div class="section-title">address</div>';
+  h += '<div style="margin-bottom:12px">';
+  h += kv('address', '<span style="word-break:break-all">'+addr+'</span>');
+
+  const normalTotal = normalAvail + normalLocked;
+  if (normalTotal > 0) h += kv('normal', fmtBit(normalTotal));
+  if (coldTotal   > 0) h += kv('cold',   fmtBit(coldTotal));
+  if (iceHeights.length > 0) h += kv('ice', 'heights ['+iceHeights.join(', ')+']');
+
+  h += kv('UTXOs', String(allUtxos.length) + (iceHeights.length > 0 ? ' + ice' : ''));
+  h += '</div>';
+
+  if (allUtxos.length === 0 && iceHeights.length === 0) {
+    h += '<div style="color:var(--dim);font-size:12px">no unspent outputs</div>';
+  } else {
+    if (allUtxos.length > 0) {
+      h += '<div style="font-size:11px;color:var(--grey);margin-bottom:6px">unspent outputs</div>';
+      h += '<div id="utxo-list-container">'+renderUtxoRows(allUtxos, LM.utxoShown)+'</div>';
+      h += loadMoreBtn('utxo-loadmore-btn');
+    }
+  }
+
+  setResult(h);
+  refreshLoadMoreBtn('utxo-loadmore-btn', LM.utxoShown, allUtxos.length, LM_UTXO_STEP, loadMoreUtxo);
+}
+
+async function showBlock(hashOrHeight) {
+  let hash=hashOrHeight;
+  if(typeof hash==='number'||/^\d+$/.test(String(hash))) hash=await rpc('getblockhash',[parseInt(hash)]);
+  const block=await rpc('getblock',[hash,1]);
+  const txCount=(block.tx||[]).length;
+
+  LM.txList=block.tx||[];
+  LM.txShown=Math.min(LM_TX_INIT, txCount);
+
+  let h='<div class="section-title">block <span style="font-weight:normal">'+block.height+'</span> <span class="section-sub">'+txCount+' transactions</span></div>';
+  h+='<div style="margin-bottom:14px">';
+  h+=kv('height',block.height);
+  h+=kv('hash','<span style="word-break:break-all">'+hash+'</span>');
+  h+=kv('time',fmtTime(block.time));
+  h+=kv('size',fmtSize(block.size));
+  h+=kv('tx count',txCount);
+  if(block.previousblockhash)
+    h+=kv('prev block','<span class="clickable" onclick="showBlock(\''+block.previousblockhash+'\');setSearch(\''+block.previousblockhash+'\')">'+block.previousblockhash.slice(0,24)+'…</span>');
+  h+='</div>';
+
+  h+='<div style="font-size:11px;color:var(--grey);margin-bottom:6px">transactions</div>';
+  h+='<div id="tx-list-container">'+renderTxRows(LM.txList, LM.txShown)+'</div>';
+  h+=loadMoreBtn('tx-loadmore-btn');
+  setResult(h);
+  refreshLoadMoreBtn('tx-loadmore-btn', LM.txShown, txCount, LM_TX_STEP, loadMoreTx);
+}
+
+async function loadRecentBlocks() {
+  if(!S.connected) return;
+  const container=document.getElementById('recent-blocks');
+  try {
+    const chain=await rpc('getblockchaininfo');
+    S.height=chain.blocks;
+    const count=Math.min(10,S.height+1);
+    const hashes=await Promise.all(Array.from({length:count},(_,i)=>rpc('getblockhash',[S.height-i])));
+    const blocks=await Promise.all(hashes.map(h=>rpc('getblock',[h,1])));
+    container.innerHTML=blocks.map(b=>
+      '<div class="block-row" onclick="goBlock(\''+b.hash+'\','+b.height+')">'
+      +'<span class="block-height">'+b.height+'</span>'
+      +'<span class="block-hash">'+b.hash+'</span>'
+      +'<span class="block-info">'+((b.tx||[]).length)+' tx · '+fmtSize(b.size)+'</span>'
+      +'</div>'
+    ).join('');
+  } catch(e){ container.innerHTML='<div class="box err">'+e.message+'</div>'; }
+}
+
+function switchHomeTab(btn, name) {
+  document.querySelectorAll('.home-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  ['blocks','mempool','peers'].forEach(n=>{
+    document.getElementById('hpanel-'+n).style.display = n===name?'':'none';
+  });
+  if(name==='mempool') loadHomeMempool();
+  if(name==='peers') loadHomePeers();
+}
+
+async function loadHomeMempool() {
+  const sumEl  = document.getElementById('home-mempool-summary');
+  const listEl = document.getElementById('home-mempool-list');
+  if(!S.connected){ sumEl.innerHTML='<div style="color:var(--dim);font-size:12px">connect to load</div>'; return; }
+  try {
+    const [info, raw] = await Promise.all([
+      rpc('getmempoolinfo'),
+      rpc('getrawmempool',[true])
+    ]);
+    // summary strip
+    sumEl.innerHTML=
+      kv('tx count', info.size)
+     +kv('total size', fmtSize(info.bytes||0))
+     +kv('usage', fmtSize(info.usage||0));
+    // tx list sorted by time (newest first)
+    const txids = Object.keys(raw||{});
+    if(txids.length===0){
+      listEl.innerHTML='<div style="color:var(--dim);font-size:12px">mempool is empty</div>';
+      return;
+    }
+    const sorted = txids.sort((a,b)=>(raw[b].time||0)-(raw[a].time||0));
+    listEl.innerHTML='<div style="font-size:11px;color:var(--grey);margin-bottom:4px">transactions</div>'
+      +sorted.map(txid=>{
+        const e=raw[txid];
+        return '<div class="tx-row" onclick="goTx(\''+txid+'\');"><span class="block-hash">'+txid+'</span>'
+          +'<span class="block-info">'+fmtSize(e.size||e.vsize||0)+' · '+fmtBit(Math.round((e.fee||0)*1e8))+'</span></div>';
+      }).join('');
+  } catch(e){ sumEl.innerHTML='<div class="box err">'+e.message+'</div>'; }
+}
+
+const _peerCache = {};
+let _activePeerIdx = null;
+
+const SERVICE_FLAGS = [
+  [0x0001, 'NODE_NETWORK'],
+  [0x1000, 'NODE_MEMCOIN']
+];
+
+function fmtServices(hex) {
+  const val = parseInt(hex, 16);
+  if(isNaN(val)) return hex;
+  const mask = SERVICE_FLAGS.reduce((a,[b])=>a|b,0);
+  const labels = SERVICE_FLAGS.filter(([bit])=>val&bit).map(([,name])=>name);
+  const unknown = val & ~mask;
+  if(unknown) labels.push('0x'+unknown.toString(16).toUpperCase());
+  const raw = '<span style="color:var(--dim);font-size:10px">(0x'+val.toString(16)+')</span>';
+  return labels.length ? labels.join(' · ')+' '+raw : raw;
+}
+
+function renderPeerDetail(i) {
+  const p = _peerCache[i];
+  if(!p) return;
+  const detailEl = document.getElementById('home-peer-detail');
+  if(!detailEl) return;
+  detailEl.style.display = '';
+  document.querySelectorAll('#home-peers-list tr.peer-active').forEach(r=>r.classList.remove('peer-active'));
+  const row = document.querySelector('#home-peers-list tr[data-peer="'+i+'"]');
+  if(row) row.classList.add('peer-active');
+  const connTime = p.conntime ? new Date(p.conntime*1000).toLocaleString() : '—';
+  const lastSend = p.lastsend ? new Date(p.lastsend*1000).toLocaleTimeString() : '—';
+  const lastRecv = p.lastrecv ? new Date(p.lastrecv*1000).toLocaleTimeString() : '—';
+  const syncedH  = p.synced_headers != null ? p.synced_headers : '—';
+  const syncedB  = p.synced_blocks  != null ? p.synced_blocks  : '—';
+  const subver   = p.subver   || '—';
+  const banscore = p.banscore != null ? p.banscore : '—';
+  const minping  = p.minping  != null ? Math.round(p.minping*1000)+' ms' : '—';
+  detailEl.innerHTML = [
+    '<div style="font-size:11px;color:var(--grey);margin-bottom:6px">peer detail — '+escapeHtml(p.addr)+'</div>',
+    kv('subversion',     escapeHtml(subver)),
+    kv('services',       fmtServices(p.services||'0')),
+    kv('connected',      connTime),
+    kv('last send',      lastSend),
+    kv('last recv',      lastRecv),
+    kv('min ping',       minping),
+    kv('ban score',      banscore),
+    kv('synced headers', syncedH),
+    kv('synced blocks',  syncedB)
+  ].join('');
+}
+
+function showPeerDetail(i) {
+  if(_activePeerIdx === i) {
+    _activePeerIdx = null;
+    const detailEl = document.getElementById('home-peer-detail');
+    if(detailEl) detailEl.style.display = 'none';
+    document.querySelectorAll('#home-peers-list tr.peer-active').forEach(r=>r.classList.remove('peer-active'));
+    return;
+  }
+  _activePeerIdx = i;
+  renderPeerDetail(i);
+}
+
+async function loadHomePeers() {
+  const el = document.getElementById('home-peers-list');
+  if(!S.connected) { el.innerHTML = '<div style="color:var(--dim);font-size:12px">connect to load</div>'; return; }
+  try {
+    const peers = await rpc('getpeerinfo');
+    if(!peers||peers.length===0) { el.innerHTML = '<div style="color:var(--dim);font-size:12px">no peers connected</div>'; return; }
+    Object.keys(_peerCache).forEach(k => delete _peerCache[k]);
+    peers.forEach((p,i) => { _peerCache[i] = p; });
+    const inbound  = peers.filter(p=>p.inbound).length;
+    const outbound = peers.length - inbound;
+    const rows = peers.map((p,i) => {
+      const ping = p.pingtime != null ? Math.round(p.pingtime*1000)+' ms' : '\u2014';
+      const sent = fmtSize(p.bytessent||0);
+      const recv = fmtSize(p.bytesrecv||0);
+      const dir  = p.inbound ? '<span style="color:var(--dim)">in</span>' : '<span style="color:var(--accent)">out</span>';
+      return '<tr data-peer="'+i+'" style="cursor:pointer" onclick="showPeerDetail('+i+')">'
+        + '<td>'+i+'</td>'
+        + '<td style="font-size:11px">'+escapeHtml(p.addr)+'</td>'
+        + '<td style="font-size:11px">'+escapeHtml(p.version||'')+'</td>'
+        + '<td class="right">'+ping+'</td>'
+        + '<td class="right">'+sent+'</td>'
+        + '<td class="right">'+recv+'</td>'
+        + '<td>'+dir+'</td>'
+        + '</tr>';
+    });
+    el.innerHTML = [
+      '<div style="font-size:11px;color:var(--grey);margin-bottom:8px">'+peers.length+' peers \u00b7 '+outbound+' out \u00b7 '+inbound+' in</div>',
+      '<table class="io-table"><thead><tr>',
+      '<th>#</th><th>address</th><th>version</th>',
+      '<th class="right">ping</th><th class="right">\u2191 sent</th><th class="right">\u2193 recv</th>',
+      '<th>dir</th></tr></thead><tbody>',
+      rows.join(''),
+      '</tbody></table>',
+      '<div id="home-peer-detail" style="display:none;margin-top:12px;padding-top:10px;border-top:1px solid var(--border2)"></div>'
+    ].join('');
+  } catch(e) { el.innerHTML = '<div class="box err">'+e.message+'</div>'; }
+  loadManagedNodes();
+  loadBannedNodes();
+  if(_activePeerIdx !== null) renderPeerDetail(_activePeerIdx);
+}
+
+/* \u2500\u2500 MANAGED NODES \u2500\u2500 */
+async function loadManagedNodes() {
+  const el = document.getElementById('home-managed-nodes');
+  if(!el) return;
+  try {
+    const nodes = await rpc('getaddednodeinfo', []);
+    const header = '<div style="font-size:11px;color:var(--grey);margin-bottom:8px;padding-top:12px;border-top:1px solid var(--border2)">managed nodes <span style="color:var(--dim)">(addnode)</span></div>';
+    let nodeRows = '';
+    if(!nodes||nodes.length===0) {
+      nodeRows = '<div style="font-size:12px;color:var(--dim);margin-bottom:10px">no manually added nodes</div>';
+    } else {
+      const trows = nodes.map(n => {
+        const raw  = n.addednode || '';
+        const disp = escapeHtml(raw);
+        const safe = raw.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        const conn = n.connected
+          ? '<span style="color:var(--accent)">yes · '+((n.addresses||[]).find(a=>a.connected)||{}).connected+'</span>'
+          : '<span style="color:var(--dim)">no</span>';
+        return '<tr>'
+          + '<td style="font-size:11px">'+disp+'</td>'
+          + '<td>'+conn+'</td>'
+          + '<td><button class="btn sm" onclick="removeNode(\''+safe+'\')">remove</button></td>'
+          + '</tr>';
+      });
+      nodeRows = '<table class="io-table" style="margin-bottom:10px"><thead><tr><th>address</th><th>connected</th><th></th></tr></thead><tbody>'
+        + trows.join('')
+        + '</tbody></table>';
+    }
+    const addForm = '<div style="display:flex;gap:8px;align-items:center">'
+      + '<input id="addnode-input" type="text" placeholder="ip:port or hostname:port"'
+      + ' style="flex:1;font-family:\'Courier New\',monospace;font-size:12px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);padding:5px 8px;outline:none"'
+      + ' onkeydown="if(event.key===\'Enter\') addNode()">'
+      + '<button class="btn sm" onclick="addNode()">add node</button>'
+      + '</div>'
+      + '<div id="addnode-msg" style="font-size:11px;margin-top:6px"></div>';
+    el.innerHTML = header + nodeRows + addForm;
+  } catch(e) {
+    document.getElementById('home-managed-nodes').innerHTML = '<div class="box err" style="margin-top:12px">'+e.message+'</div>';
+  }
+}
+
+async function addNode() {
+  const input = document.getElementById('addnode-input');
+  const msg   = document.getElementById('addnode-msg');
+  const addr  = (input ? input.value : '').trim();
+  if(!addr) { if(msg) msg.innerHTML = '<span style="color:var(--red)">enter an address</span>'; return; }
+  try {
+    await rpc('addnode', [addr, 'add']);
+    if(input) input.value = '';
+    if(msg) msg.innerHTML = '<span style="color:var(--accent)">added: '+escapeHtml(addr)+'</span>';
+    setTimeout(loadManagedNodes, 800);
+  } catch(e) {
+    if(msg) msg.innerHTML = '<span style="color:var(--red)">'+e.message+'</span>';
+  }
+}
+
+async function removeNode(addr) {
+  try {
+    await rpc('addnode', [addr, 'remove']);
+    loadManagedNodes();
+  } catch(e) {
+    const el = document.getElementById('home-managed-nodes');
+    if(el) el.insertAdjacentHTML('beforeend', '<div style="color:var(--red);font-size:11px;margin-top:4px">'+e.message+'</div>');
+  }
+}
+
+async function loadBannedNodes() {
+  const el = document.getElementById('home-banned-nodes');
+  if(!el) return;
+  try {
+    const banned = await rpc('listbanned', []);
+    const header = '<div style="font-size:11px;color:var(--grey);margin-bottom:8px;padding-top:12px;border-top:1px solid var(--border2)">banned nodes <span style="color:var(--dim)">(setban)</span></div>';
+    let rows = '';
+    if(!banned||banned.length===0) {
+      rows = '<div style="font-size:12px;color:var(--dim);margin-bottom:10px">no banned nodes</div>';
+    } else {
+      const trows = banned.map(b => {
+        const raw  = b.address || '';
+        const disp = escapeHtml(raw);
+        const safe = raw.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        const untilStr = b.banned_until ? new Date(b.banned_until*1000).toLocaleString() : '\u2014';
+        return '<tr>'
+          + '<td style="font-size:11px">'+disp+'</td>'
+          + '<td style="font-size:11px">'+untilStr+'</td>'
+          + '<td><button class="btn sm" onclick="unbanPeer(\''+safe+'\')">unban</button></td>'
+          + '</tr>';
+      });
+      rows = '<table class="io-table" style="margin-bottom:10px"><thead><tr><th>address</th><th>banned until</th><th></th></tr></thead><tbody>'
+        + trows.join('') + '</tbody></table>';
+    }
+    const inputStyle = 'flex:1;font-family:\'Courier New\',monospace;font-size:12px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);padding:5px 8px;outline:none';
+    const addForm = '<div style="display:flex;gap:8px;align-items:center">'
+      + '<input id="ban-input" type="text" placeholder="ip or ip/subnet"'
+      + ' style="'+inputStyle+'"'
+      + ' onkeydown="if(event.key===\'Enter\') banPeer()">'
+      + '<button class="btn sm" onclick="banPeer()">ban</button>'
+      + '</div>'
+      + '<div id="ban-msg" style="font-size:11px;margin-top:6px"></div>';
+    el.innerHTML = header + rows + addForm;
+  } catch(e) {
+    document.getElementById('home-banned-nodes').innerHTML = '<div class="box err" style="margin-top:12px">'+e.message+'</div>';
+  }
+}
+
+async function banPeer() {
+  const input = document.getElementById('ban-input');
+  const msg   = document.getElementById('ban-msg');
+  const addr  = (input ? input.value : '').trim();
+  if(!addr) { if(msg) msg.innerHTML = '<span style="color:var(--red)">enter an IP or subnet</span>'; return; }
+  try {
+    // 9999999999 = year 2286, effectively permanent
+    const banHost = addr.split('/')[0];
+    // 1. remove from addnode if present (prevents auto-reconnect)
+    try {
+      const added = await rpc('getaddednodeinfo', []);
+      for(const n of (added||[])) {
+        if(n.addednode && n.addednode.startsWith(banHost)) {
+          await rpc('addnode', [n.addednode, 'remove']);
+        }
+      }
+    } catch(_) {}
+    // 2. ban (use default bantime so node handles storage correctly)
+    await rpc('setban', [addr, 'add']);
+    // 3. disconnect any matching connected peers
+    try {
+      const peers = await rpc('getpeerinfo');
+      for(const p of (peers||[])) {
+        if(p.addr && p.addr.startsWith(banHost)) {
+          await rpc('disconnectnode', [p.addr]);
+        }
+      }
+    } catch(_) {}
+    if(input) input.value = '';
+    if(msg) msg.innerHTML = '<span style="color:var(--accent)">banned and disconnected: '+escapeHtml(addr)+'</span>';
+    setTimeout(() => { loadHomePeers(); loadManagedNodes(); loadBannedNodes(); }, 800);
+  } catch(e) {
+    if(msg) msg.innerHTML = '<span style="color:var(--red)">'+e.message+'</span>';
+  }
+}
+
+async function unbanPeer(addr) {
+  try {
+    await rpc('setban', [addr, 'remove']);
+    loadBannedNodes();
+  } catch(e) {
+    const el = document.getElementById('home-banned-nodes');
+    if(el) el.insertAdjacentHTML('beforeend', '<div style="color:var(--red);font-size:11px;margin-top:4px">'+e.message+'</div>');
+  }
+}
+
+window.addEventListener('load', () => { buildThemeBar(); autoConnect(); });
+setInterval(()=>{ if(S.connected) updateInfoStrip(); }, 10000);
+setInterval(()=>{
+  if(!S.connected) return;
+  const home = document.getElementById('home');
+  if(home.style.display==='none') return;
+  const activeTab = document.querySelector('.home-tab.active');
+  const name = activeTab ? activeTab.textContent.trim() : 'recent blocks';
+  if(name==='recent blocks') loadRecentBlocks();
+  else if(name==='mempool')  loadHomeMempool();
+  else if(name==='peers')    loadHomePeers();
+}, 30000);
+</script>
+</body>
+</html>
